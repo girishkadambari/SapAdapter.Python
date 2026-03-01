@@ -19,14 +19,14 @@ class SapEngine:
             # Initialize COM for this thread (Crucial for multithreading)
             pythoncom.CoInitialize()
             
-            logger.debug("Attempting to get SAPGUI object via GetObject...")
+            # logger.debug("Attempting to get SAPGUI object via GetObject...")
             # This is exactly what the user's VBScript does: Set SapGuiAuto = GetObject("SAPGUI")
             sap_gui_auto = win32com.client.GetObject("SAPGUI")
             if not sap_gui_auto:
                 logger.error("SAPGUI object not found in ROT.")
                 return None
                 
-            logger.debug("Acquiring scripting engine from SapGuiAuto...")
+            # logger.debug("Acquiring scripting engine from SapGuiAuto...")
             application = sap_gui_auto.GetScriptingEngine
             if not application:
                 logger.error("Failed to get Scripting Engine from SAPGUI object.")
@@ -73,16 +73,16 @@ class SapEngine:
         try:
             info = session.Info
             return {
-                "systemId": str(info.SystemName),
-                "client": str(info.Client),
-                "user": str(info.User),
-                "language": str(info.Language),
-                "server": str(info.MessageServer),
-                "scriptingModeReadOnly": bool(info.IsReadOnly),
-                "transaction": str(info.Transaction),
-                "program": str(info.Program),
-                "dynpro": str(info.ScreenNumber), # Mapping ScreenNumber to dynpro
-                "screenNumber": str(info.ScreenNumber)
+                "systemId": str(getattr(info, "SystemName", "")),
+                "client": str(getattr(info, "Client", "")),
+                "user": str(getattr(info, "User", "")),
+                "language": str(getattr(info, "Language", "")),
+                "server": str(getattr(info, "MessageServer", "")),
+                "scriptingModeReadOnly": bool(getattr(info, "IsReadOnly", False)),
+                "transaction": str(getattr(info, "Transaction", "")),
+                "program": str(getattr(info, "Program", "")),
+                "dynpro": str(getattr(info, "ScreenNumber", "")),
+                "screenNumber": str(getattr(info, "ScreenNumber", ""))
             }
         except Exception as e:
             logger.error(f"Error getting session info: {str(e)}")

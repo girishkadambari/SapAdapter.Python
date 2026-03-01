@@ -1,5 +1,6 @@
 # /Users/girish/girish-workspace/sap-copilot-main/SapAdapter.Python/app/server.py
 import json
+from typing import Any
 import asyncio
 import websockets
 from loguru import logger
@@ -29,7 +30,7 @@ class WebSocketServer:
                 try:
                     data = json.loads(message)
                     request = RequestModel(**data)
-                    logger.debug(f"Request: {request.command} ({request.id})")
+                    logger.debug(f"Request: {request.type} ({request.id})")
                     
                     response = await self.router.handle(request, context={"ws": websocket})
                     await websocket.send(response.model_dump_json())
@@ -48,7 +49,7 @@ class WebSocketServer:
         if not self.clients:
             return
             
-        payload = json.dumps({"event": event_name, "data": data})
+        payload = json.dumps({"type": "event", "event": event_name, "payload": data})
         await asyncio.gather(
             *[client.send(payload) for client in self.clients],
             return_exceptions=True
