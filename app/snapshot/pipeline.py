@@ -88,8 +88,8 @@ def capture_snapshot(session, session_id: str):
         snapshot["fields"] = field_dict
         
         logger.info(f"Captured snapshot with {len(field_dict)} fields")
-        logger.info(f"Captured snapshot with ________________ {snapshot} __________________")
         return snapshot
+
     except Exception as e:
         logger.error(f"Error capturing snapshot: {str(e)}")
         raise
@@ -124,8 +124,11 @@ def _collect_fields_recursive(container, field_dict):
             # Recurse
             if hasattr(child, "Children"):
                 _collect_fields_recursive(child, field_dict)
-    except:
+    except Exception as e:
+        # Log and continue — don't let one bad child kill the whole capture
+        logger.warning(f"Error extracting field from container: {str(e)}")
         pass
+
 
 def _map_type_to_kind(sap_type: str) -> str:
     if "GuiLabel" in sap_type: return "label"
