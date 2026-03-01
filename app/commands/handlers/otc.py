@@ -49,6 +49,20 @@ async def check_credit_limit(session, payload):
     session.FindById("wnd[0]/usr/chkRF02L-D0110").Selected = True
     session.ActiveWindow.SendVKey(0) # Enter
     await wait_for_idle(session)
+
+    # Detect S/4HANA Obsolescence Popup (SAP Note 1946054)
+    try:
+        if session.ActiveWindow.Type == "GuiModalWindow" and "Note 1946054" in session.ActiveWindow.Text:
+            logger.warning(f"FD32 is obsolete in this system. Directing user to UKM_BP.")
+            session.ActiveWindow.Close()
+            return {
+                "success": False,
+                "error": "TCODE_OBSOLETE",
+                "message": "FD32 is obsolete in S/4HANA. Use UKM_BP for Credit Management.",
+                "sapNote": "1946054"
+            }
+    except:
+        pass
     
     limit = str(session.FindById("wnd[0]/usr/txtKNKK-KLTOL").Text)
     exposure = str(session.FindById("wnd[0]/usr/txtRF02L-SAKNR").Text)
