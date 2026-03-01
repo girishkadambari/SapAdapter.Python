@@ -9,7 +9,7 @@ from .menu import get_menu_paths, select_menu_path
 from .otc import (
     get_sales_order, check_credit_limit, get_receivables, 
     navigate_credit_release, release_credit_block, 
-    open_po_display, open_po_history
+    open_po_display, get_po_details, open_po_history
 )
 
 # This map routes SapCommand types to their specific implementation functions
@@ -47,6 +47,7 @@ _COMMAND_MAP = {
     "NAVIGATE_CREDIT_RELEASE": navigate_credit_release,
     "RELEASE_CREDIT_BLOCK": release_credit_block,
     "OPEN_PO_DISPLAY": open_po_display,
+    "GET_PO_DETAILS": get_po_details,
     "OPEN_PO_HISTORY": open_po_history,
 }
 

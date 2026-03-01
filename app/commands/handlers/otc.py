@@ -134,7 +134,22 @@ async def release_credit_block(session, payload):
     await wait_for_idle(session)
     session.ActiveWindow.SendVKey(11) # Save
     await wait_for_idle(session)
-    return {"success": True}
+    
+    # Active Flow Verification: Check status bar for success/error
+    status_text = str(session.ActiveWindow.StatusBar.Text)
+    status_type = str(session.ActiveWindow.StatusBar.MessageType) # S, W, E, A, I
+    
+    if status_type in ["E", "A"]:
+        return {
+            "success": False, 
+            "error": "RELEASE_FAILED",
+            "message": f"SAP Error: {status_text}"
+        }
+        
+    return {
+        "success": True, 
+        "message": status_text if status_text else "Credit block released successfully"
+    }
 
 async def open_po_display(session, payload):
     po_id = payload.get("poId", "")
@@ -142,6 +157,36 @@ async def open_po_display(session, payload):
     session.StartTransaction("ME23N")
     await wait_for_idle(session)
     return {"success": True, "target": "ME23N", "poId": po_id}
+
+async def get_po_details(session, payload):
+    po_id = payload.get("poId")
+    logger.info(f"GET_PO_DETAILS: {po_id}")
+    
+    session.StartTransaction("ME23N")
+    await wait_for_idle(session)
+
+    # If po_id provided, search for it
+    if po_id:
+        # Click 'Other Purchase Order' button (Shift+F5 or specific ID)
+        session.FindById("wnd[0]/tbar[1]/btn[17]").Press()
+        await wait_for_idle(session)
+        session.FindById("wnd[1]/usr/subSUB0:SAPLMEGUI:0003/ctxtMEPO_SELECT-EBELN").Text = str(po_id)
+        session.ActiveWindow.SendVKey(0) # Enter
+        await wait_for_idle(session)
+
+    # Basic entity extraction from ME23N header
+    vendor = str(session.FindById("wnd[0]/usr/subSUB0:SAPLMEGUI:0010/subSUB1:SAPLMEGUI:0011/subSUB1:SAPLMEGUI:0012/subSUB1:SAPLMEGUI:0013/subSUB1:SAPLMEGUI:0601/subSUB1:SAPLMEGUI:0602/subSUB1:SAPLMEGUI:0603/ctxtMEPO1211-LIFNR").Text)
+    doc_date = str(session.FindById("wnd[0]/usr/subSUB0:SAPLMEGUI:0010/subSUB1:SAPLMEGUI:0011/subSUB1:SAPLMEGUI:0012/subSUB1:SAPLMEGUI:0013/subSUB1:SAPLMEGUI:0601/subSUB1:SAPLMEGUI:0602/subSUB1:SAPLMEGUI:0603/ctxtMEPO1211-BEDAT").Text)
+    
+    return {
+        "success": True,
+        "data": {
+            "poId": po_id,
+            "vendor": vendor.strip(),
+            "docDate": doc_date.strip(),
+            "status": str(session.ActiveWindow.StatusBar.Text)
+        }
+    }
 
 async def open_po_history(session, payload):
     shell_id = payload.get("shellId")
