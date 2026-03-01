@@ -1,12 +1,13 @@
-# /Users/girish/girish-workspace/sap-copilot-main/SapAdapter.Python/app/engine/wait_helper.py
 import asyncio
+import time
+from typing import Any
 from loguru import logger
 
 async def wait_for_idle(session: Any, timeout_ms: int = 20000):
     """
     Waits for a SAP session to become idle by polling session.Busy.
     """
-    start_time = asyncio.get_event_loop().time()
+    start_time = time.time()
     timeout_sec = timeout_ms / 1000.0
     poll_interval = 0.5
 
