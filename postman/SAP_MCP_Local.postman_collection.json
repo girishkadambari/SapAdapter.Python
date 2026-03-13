@@ -1,0 +1,341 @@
+{
+	"info": {
+		"_postman_id": "sap-mcp-collection",
+		"name": "SAP MCP Production Test Suite",
+		"description": "Comprehensive test suite for SAP MCP Server. Requires tests/postman_adapter.py to be running.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "01 Session Management",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": ["{{base_url}}"],
+							"path": ["health"]
+						},
+						"description": "Verify the Test Adapter is alive."
+					}
+				},
+				{
+					"name": "List Sessions (MCP)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"if (jsonData.result && jsonData.result.content) {",
+									"    var sessions = JSON.parse(jsonData.result.content[0].text);",
+									"    if (sessions.length > 0) {",
+									"        pm.environment.set(\"session_id\", sessions[0].sessionId);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"id\": 1,\n    \"method\": \"tools/list\",\n    \"params\": {}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/mcp",
+							"host": ["{{base_url}}"],
+							"path": ["mcp"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "02 Observation",
+			"item": [
+				{
+					"name": "Observe Screen (Basic)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"id\": 2,\n    \"method\": \"tools/call\",\n    \"params\": {\n        \"name\": \"observe_screen\",\n        \"arguments\": {\n            \"session_id\": \"{{session_id}}\",\n            \"include_screenshot\": false\n        }\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/mcp",
+							"host": ["{{base_url}}"],
+							"path": ["mcp"]
+						}
+					}
+				},
+                {
+					"name": "Observe Screen (Screenshot)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"id\": 3,\n    \"method\": \"tools/call\",\n    \"params\": {\n        \"name\": \"observe_screen\",\n        \"arguments\": {\n            \"session_id\": \"{{session_id}}\",\n            \"include_screenshot\": true\n        }\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/mcp",
+							"host": ["{{base_url}}"],
+							"path": ["mcp"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "03 Basic Actions",
+			"item": [
+				{
+					"name": "Press Button",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"id\": 4,\n    \"method\": \"tools/call\",\n    \"params\": {\n        \"name\": \"execute_action\",\n        \"arguments\": {\n            \"session_id\": \"{{session_id}}\",\n            \"target_id\": \"{{target_control_id}}\",\n            \"action_type\": \"press\",\n            \"params\": {}\n        }\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/mcp",
+							"host": ["{{base_url}}"],
+							"path": ["mcp"]
+						}
+					}
+				},
+				{
+					"name": "Set Text Value",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"id\": 5,\n    \"method\": \"tools/call\",\n    \"params\": {\n        \"name\": \"execute_action\",\n        \"arguments\": {\n            \"session_id\": \"{{session_id}}\",\n            \"target_id\": \"{{target_control_id}}\",\n            \"action_type\": \"set_text\",\n            \"params\": {\n                \"value\": \"{{target_value}}\"\n            }\n        }\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/mcp",
+							"host": ["{{base_url}}"],
+							"path": ["mcp"]
+						}
+					}
+				}
+			]
+		},
+        {
+			"name": "04 Modal Handling",
+			"item": [
+				{
+					"name": "Observe Modal",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"id\": 401,\n    \"method\": \"tools/call\",\n    \"params\": {\n        \"name\": \"observe_screen\",\n        \"arguments\": {\n            \"session_id\": \"{{session_id}}\"\n        }\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/mcp",
+							"host": ["{{base_url}}"],
+							"path": ["mcp"]
+						},
+                        "description": "Check if 'modal' is present in the response body."
+					}
+				}
+			]
+		},
+		{
+			"name": "05 Extraction",
+			"item": [
+				{
+					"name": "Extract Entity",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"id\": 6,\n    \"method\": \"tools/call\",\n    \"params\": {\n        \"name\": \"extract_entity\",\n        \"arguments\": {\n            \"session_id\": \"{{session_id}}\",\n            \"entity_type\": \"{{entity_type}}\"\n        }\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/mcp",
+							"host": ["{{base_url}}"],
+							"path": ["mcp"]
+						}
+					}
+				}
+			]
+		},
+        {
+			"name": "06 Table Controls",
+			"item": [
+				{
+					"name": "Observe Table Rows",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"id\": 601,\n    \"method\": \"tools/call\",\n    \"params\": {\n        \"name\": \"observe_screen\",\n        \"arguments\": {\n            \"session_id\": \"{{session_id}}\"\n        }\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/mcp",
+							"host": ["{{base_url}}"],
+							"path": ["mcp"]
+						}
+					}
+				}
+			]
+		},
+        {
+			"name": "07 Grid / ALV",
+			"item": [
+				{
+					"name": "Observe Grid Columns",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"id\": 701,\n    \"method\": \"tools/call\",\n    \"params\": {\n        \"name\": \"observe_screen\",\n        \"arguments\": {\n            \"session_id\": \"{{session_id}}\"\n        }\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/mcp",
+							"host": ["{{base_url}}"],
+							"path": ["mcp"]
+						}
+					}
+				}
+			]
+		},
+        {
+			"name": "08 Tree Controls",
+			"item": [
+				{
+					"name": "Observe Tree Nodes",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"id\": 801,\n    \"method\": \"tools/call\",\n    \"params\": {\n        \"name\": \"observe_screen\",\n        \"arguments\": {\n            \"session_id\": \"{{session_id}}\"\n        }\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/mcp",
+							"host": ["{{base_url}}"],
+							"path": ["mcp"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "11 Negative Cases",
+			"item": [
+				{
+					"name": "Invalid Session ID",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"jsonrpc\": \"2.0\",\n    \"id\": 99,\n    \"method\": \"tools/call\",\n    \"params\": {\n        \"name\": \"observe_screen\",\n        \"arguments\": {\n            \"session_id\": \"99-99-invalid\"\n        }\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/mcp",
+							"host": ["{{base_url}}"],
+							"path": ["mcp"]
+						}
+					}
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}
