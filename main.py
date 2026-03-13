@@ -1,36 +1,63 @@
-# /Users/girish/girish-workspace/sap-copilot-main/SapAdapter.Python/main.py
 import asyncio
 import os
-from app.logger import setup_logger
-from app.server import WebSocketServer
-from app.commands.router import CommandRouter
-from app.engine.sap_engine import SapEngine
-from app.engine.session_manager import SessionManager
+import json
+import pythoncom
+from sap_mcp.utils.logger import setup_logger
+from sap_mcp.server.websocket import WebSocketServer
+from sap_mcp.server.router import CommandRouter
+from sap_mcp.runtime.sap_runtime import SapRuntime
+from sap_mcp.mcp.mcp_adapter import McpAdapter
+from sap_mcp.mcp.mcp_server import McpServer
+from sap_mcp.observation.screen_observation_builder import ScreenObservationBuilder
+from sap_mcp.execution.action_dispatcher import ActionDispatcher
+from sap_mcp.schemas.action import ActionRequest
 
 # Setup Logger
 logger = setup_logger()
 
-from app.commands.handlers.execute import execute_command
-from app.snapshot.pipeline import capture_snapshot
-
-# Shared instances
-session_manager = SessionManager()
+# Global Instances for Legacy Support
+runtime = SapRuntime()
+observation_builder = ScreenObservationBuilder(runtime)
+action_dispatcher = ActionDispatcher(runtime)
 server = None
 
-def get_session_from_payload(payload):
-    # Electron app sends sessionId in payload for executeCommand and captureSnapshot
-    session_id = payload.get("sessionId") or session_manager.active_session_id
-    if not session_id:
-        raise Exception("No active session. Please attach to or list sessions first.")
-    
-    indices = session_manager.get_indices(session_id)
-    if not indices:
-        raise Exception(f"Session {session_id} not found in adapter registry")
-        
-    engine = SapEngine.get_scripting_engine()
-    return SapEngine.get_session(engine, indices[0], indices[1])
+async def list_sessions_handler(ctx, payload):
+    logger.info("Listing SAP sessions via new runtime...")
+    return runtime.list_sessions()
 
-import pythoncom
+async def attach_session_handler(ctx, payload):
+    session_id = payload.get("sessionId")
+    if not session_id:
+        raise ValueError("sessionId required for attachSession")
+    runtime.session_manager.set_active(session_id)
+    return {"status": "attached", "sessionId": session_id}
+
+async def capture_snapshot_handler(ctx, payload):
+    session_id = payload.get("sessionId")
+    include_ss = payload.get("includeScreenshot", False)
+    observation = await observation_builder.build(session_id, include_screenshot=include_ss)
+    return observation.model_dump()
+
+async def execute_command_handler(ctx, payload):
+    # Map legacy payload to new ActionRequest
+    session_id = payload.get("sessionId") or runtime.session_manager.active_session_id
+    action_type = payload.get("type", "press")
+    target_id = payload.get("id") or payload.get("target_id")
+    
+    if not target_id:
+        raise ValueError("target_id (or 'id') is required for executeCommand")
+        
+    request = ActionRequest(
+        session_id=str(session_id),
+        target_id=str(target_id),
+        action_type=str(action_type),
+        params=payload.get("payload", {})
+    )
+    result = await action_dispatcher.execute(request)
+    return result.model_dump()
+
+async def health_check_handler(ctx, payload):
+    return {"status": "ok", "provider": "sap_mcp"}
 
 async def monitor_screen():
     """
@@ -42,10 +69,9 @@ async def monitor_screen():
     
     while True:
         try:
-            if session_manager.active_session_id and server:
-                # We need to get a fresh engine reference for this thread if needed,
-                # but get_session_from_payload handles that.
-                session = get_session_from_payload({})
+            sid = runtime.session_manager.active_session_id
+            if sid and server:
+                session = runtime.get_session(sid)
                 info = session.Info
                 current_tx = str(info.Transaction)
                 current_title = str(session.ActiveWindow.Text) if session.ActiveWindow else ""
@@ -53,66 +79,29 @@ async def monitor_screen():
                 if current_tx != last_tx or current_title != last_title:
                     logger.info(f"Screen changed: {current_tx} - {current_title}")
                     await server.broadcast("screen.changed", {
-                        "sessionId": session_manager.active_session_id,
+                        "sessionId": sid,
                         "transaction": current_tx,
                         "title": current_title
                     })
                     last_tx = current_tx
                     last_title = current_title
-        except Exception as e:
-            # Silent skip if COM is busy or no active session
+        except Exception:
             pass
             
-        await asyncio.sleep(2) # Poll every 2 seconds
-
-async def list_sessions_handler(ctx, payload):
-    logger.info("Listing SAP sessions...")
-    engine = SapEngine.get_scripting_engine()
-    if not engine:
-        raise Exception("SAP Scripting Engine not available")
-    
-    sessions = SapEngine.list_sessions(engine)
-    
-    # Auto-register found sessions
-    for s in sessions:
-        parts = s["sessionId"].split("-")
-        session_manager.register(s["sessionId"], int(parts[0]), int(parts[1]))
-    
-    # Auto-set active if none
-    if sessions and not session_manager.active_session_id:
-        session_manager.set_active(sessions[0]["sessionId"])
-        
-    return sessions
-
-async def attach_session_handler(ctx, payload):
-    session_id = payload.get("sessionId")
-    if not session_id:
-        raise ValueError("sessionId required for attachSession")
-        
-    session_manager.set_active(session_id)
-    return {"status": "attached", "sessionId": session_id}
-
-async def capture_snapshot_handler(ctx, payload):
-    session_id = payload.get("sessionId") or session_manager.active_session_id
-    session = get_session_from_payload(payload)
-    return capture_snapshot(session, session_id)
-
-async def execute_command_handler(ctx, payload):
-    # payload is a SapCommand object
-    session = get_session_from_payload(payload)
-    return await execute_command(session, payload)
-
-async def health_check_handler(ctx, payload):
-    return {"status": "ok", "provider": "python-com"}
+        await asyncio.sleep(2)
 
 async def main():
     global server
-    logger.info("Initializing SAP Copilot Adapter (Python Edition)")
+    logger.info("Initializing SAP MCP Server")
     
     # Initialize Core Components
     router = CommandRouter()
     
-    # Register Protocol Handlers (Matching AdapterRequestType)
+    # Initialize MCP Adapter and Server
+    mcp_adapter = McpAdapter(runtime)
+    mcp_server = McpServer(mcp_adapter)
+    
+    # Register Legacy Protocol Handlers
     router.register("healthCheck", health_check_handler)
     router.register("listSessions", list_sessions_handler)
     router.register("attachSession", attach_session_handler)
@@ -122,8 +111,9 @@ async def main():
     # Start Server
     port = int(os.getenv("PORT", 8787))
     server = WebSocketServer("0.0.0.0", port, router)
+    server.mcp_server = mcp_server
     
-    # Start Screen Monitor in background
+    # Start Screen Monitor
     asyncio.create_task(monitor_screen())
     
     await server.start()
@@ -132,4 +122,4 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        logger.info("Server stopped by user.")
+        logger.info("Server stopped.")
