@@ -1,4 +1,4 @@
-from typing import Any, Optional, List
+from typing import Any, Optional, List, Dict
 from loguru import logger
 from ..schemas.observation import ScreenObservation
 from .com_executor import ComExecutor

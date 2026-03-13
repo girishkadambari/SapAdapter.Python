@@ -10,7 +10,7 @@ from sap_mcp.mcp.mcp_adapter import McpAdapter
 from sap_mcp.mcp.mcp_server import McpServer
 from sap_mcp.observation.screen_observation_builder import ScreenObservationBuilder
 from sap_mcp.execution.action_dispatcher import ActionDispatcher
-from sap_mcp.schemas.action import ActionRequest
+from sap_mcp.schemas import ActionRequest
 
 
 # Setup Logger

@@ -5,7 +5,7 @@ from ..runtime.sap_runtime import SapRuntime
 from ..observation.screen_observation_builder import ScreenObservationBuilder
 from ..execution.action_dispatcher import ActionDispatcher
 from ..extraction.entity_extractor import EntityExtractor
-from ..schemas.action import ActionRequest
+from ..schemas import ActionRequest
 
 from .tool_definitions import get_tool_definitions
 

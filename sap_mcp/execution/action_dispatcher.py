@@ -4,7 +4,7 @@ Action execution pipeline.
 Deterministic routing and execution of UI interactions with post-action verification.
 """
 from loguru import logger
-from ..schemas.action import ActionRequest, ActionResult
+from ..schemas import ActionRequest, ActionResult
 from ..runtime.sap_runtime import SapRuntime
 from .wait_strategy import WaitStrategy
 from ..observation.screen_observation_builder import ScreenObservationBuilder

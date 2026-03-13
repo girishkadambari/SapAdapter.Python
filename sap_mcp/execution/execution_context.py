@@ -1,7 +1,7 @@
 from typing import Any, List, Optional
 from datetime import datetime
 from ..schemas.observation import ScreenObservation
-from ..schemas.action import ActionRequest
+from ..schemas import ActionRequest
 
 class ExecutionContext:
     """
