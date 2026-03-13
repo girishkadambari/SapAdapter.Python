@@ -12,6 +12,7 @@ from sap_mcp.observation.screen_observation_builder import ScreenObservationBuil
 from sap_mcp.execution.action_dispatcher import ActionDispatcher
 from sap_mcp.schemas.action import ActionRequest
 
+
 # Setup Logger
 logger = setup_logger()
 
