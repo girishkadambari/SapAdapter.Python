@@ -49,8 +49,8 @@ def get_tool_definitions() -> List[Dict[str, Any]]:
                     },
                     "action_type": {
                         "type": "string",
-                        "enum": ["set_text", "press", "select", "set_value"],
-                        "description": "The type of action to execute."
+                        "enum": ["set_text", "press", "select", "set_value", "send_vkey"],
+                        "description": "The type of action to execute. Use 'send_vkey' with 'vkey' param (e.g. 0 for Enter) when no button is available."
                     },
                     "params": {
                         "type": "object",

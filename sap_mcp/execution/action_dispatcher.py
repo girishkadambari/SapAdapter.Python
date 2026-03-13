@@ -55,6 +55,10 @@ class ActionDispatcher:
                     target.Select()
                 elif hasattr(target, "Selected"):
                     target.Selected = True
+            elif request.action_type == "send_vkey":
+                # sendVKey works on window objects
+                vkey = int(request.params.get("vkey", 0))
+                session.ActiveWindow.sendVKey(vkey)
             elif request.action_type == "set_value":
                 # For checkboxes or other value-based toggles
                 if hasattr(target, "Key"):
