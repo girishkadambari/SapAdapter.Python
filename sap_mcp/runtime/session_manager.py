@@ -28,23 +28,37 @@ class SessionManager:
             
             for i in range(application.Children.Count):
                 connection = application.Children(i)
-                for j in range(connection.Children.Count):
-                    session = connection.Children(j)
-                    info = session.Info
-                    
-                    session_id = f"{i}-{j}"
-                    session_data = {
-                        "sessionId": session_id,
-                        "connection_idx": i,
-                        "session_idx": j,
-                        "systemId": str(info.SystemName),
-                        "client": str(info.Client),
-                        "user": str(info.User),
-                        "transaction": str(info.Transaction),
-                        "title": str(session.ActiveWindow.Text) if session.ActiveWindow else "SAP"
-                    }
-                    sessions.append(session_data)
-                    self._sessions[session_id] = session_data
+                
+                # Active sessions are children of a connection
+                # Using .Sessions is more explicit for SAP GUI
+                try:
+                    for j in range(connection.Sessions.Count):
+                        session = connection.Sessions(j)
+                        info = session.Info
+                        session_id = f"{i}-{j}"
+                        
+                        # Get window title safely
+                        title = "SAP"
+                        try:
+                            if session.ActiveWindow:
+                                title = str(session.ActiveWindow.Text)
+                        except Exception:
+                            pass
+
+                        session_data = {
+                            "sessionId": session_id,
+                            "connection_idx": i,
+                            "session_idx": j,
+                            "systemId": str(info.SystemName),
+                            "client": str(info.Client),
+                            "user": str(info.User),
+                            "transaction": str(info.Transaction),
+                            "title": title
+                        }
+                        sessions.append(session_data)
+                        self._sessions[session_id] = session_data
+                except Exception as e:
+                    logger.warning(f"Failed to enumerate sessions for connection {i}: {str(e)}")
                     
             return sessions
         except Exception as e:
@@ -63,6 +77,6 @@ class SessionManager:
     def set_active(self, session_id: str):
         """
         Sets the default active session.
-        """
+        """  
         self.active_session_id = session_id
         logger.info(f"Active SAP session set to: {session_id}")

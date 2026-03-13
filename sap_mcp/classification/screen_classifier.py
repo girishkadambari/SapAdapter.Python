@@ -62,7 +62,7 @@ class ScreenClassifier:
         """
         metadata = {
             "control_count": len(controls),
-            "has_errors": any("error" in (c.text or "").lower() for c in controls if c.type == "GuiLabel")
+            "has_errors": any("error" in (c.label or "").lower() for c in controls if c.type == "GuiLabel")
         }
         
         if screen_type == ScreenType.GRID_LIST:

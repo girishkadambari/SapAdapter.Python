@@ -23,10 +23,22 @@ class RawSnapshotBuilder:
             controls.append(self._extract_properties(container))
             
             # Recurse into children if they exist
+            # Note: In SAP GUI, Children may exist but be None, or Count may be reported but indexing fails
             if hasattr(container, "Children"):
                 children = container.Children
-                for i in range(children.Count):
-                    self._collect_recursive(children(i), controls)
+                if children is not None:
+                    try:
+                        count = children.Count
+                        for i in range(count):
+                            try:
+                                child = children(i)
+                                if child:
+                                    self._collect_recursive(child, controls)
+                            except Exception:
+                                # Skip problematic children (e.g., transitional states or index errors)
+                                continue
+                    except Exception:
+                        pass
         except Exception as e:
             logger.debug(f"Error extracting from container {getattr(container, 'Id', 'unknown')}: {str(e)}")
 

@@ -24,7 +24,6 @@ class ActionDispatcher:
         Executes a standardized ActionRequest.
         """
         logger.info(f"Executing action: {request.action_type} on {request.target_id}")
-        
         session = self.runtime.get_session(request.session_id)
         
         # 1. Ensure SAP is ready
@@ -38,7 +37,12 @@ class ActionDispatcher:
 
         # 2. Find target and execute
         try:
-            target = session.FindById(request.target_id)
+            # Normalize target_id: remove leading slashes which can cause FindById failure
+            normalized_id = request.target_id
+            if normalized_id.startswith("/"):
+                normalized_id = normalized_id.lstrip("/")
+            
+            target = session.FindById(normalized_id)
             
             # Execute based on action type
             if request.action_type == "set_text":
@@ -68,6 +72,8 @@ class ActionDispatcher:
             
             return ActionResult(
                 success=True,
+                action_type=request.action_type,
+                target_id=request.target_id,
                 observation=observation,
                 message=f"Action {request.action_type} executed successfully."
             )
@@ -82,6 +88,8 @@ class ActionDispatcher:
                 
             return ActionResult(
                 success=False,
+                action_type=request.action_type,
+                target_id=request.target_id,
                 error=str(e),
                 observation=observation
             )
