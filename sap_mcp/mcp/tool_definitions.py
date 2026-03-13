@@ -28,6 +28,11 @@ def get_tool_definitions() -> List[Dict[str, Any]]:
                         "type": "boolean",
                         "description": "Whether to include a base64-encoded screenshot in the response.",
                         "default": False
+                    },
+                    "force_recursive": {
+                        "type": "boolean",
+                        "description": "If true, bypasses the high-performance GetObjectTree method and uses slow recursive extraction. Useful for older SAP versions.",
+                        "default": False
                     }
                 },
                 "required": []

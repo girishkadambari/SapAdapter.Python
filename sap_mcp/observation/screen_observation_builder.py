@@ -19,7 +19,7 @@ class ScreenObservationBuilder:
         self.screenshot_service = ScreenshotService()
         self.classifier = ScreenClassifier()
 
-    async def build(self, session_id: Optional[str] = None, include_screenshot: bool = False) -> ScreenObservation:
+    async def build(self, session_id: Optional[str] = None, include_screenshot: bool = False, force_recursive: bool = False) -> ScreenObservation:
         """
         Main entry point to capture the current state.
         """
@@ -36,7 +36,8 @@ class ScreenObservationBuilder:
         modal_model = self.runtime.modal_guard.detect(session)
         
         # 4. Controls
-        raw_controls = self.raw_builder.capture(win)
+        # Pass session instead of win to enable GetObjectTree optimization
+        raw_controls = self.raw_builder.capture(session, force_recursive=force_recursive)
         norm_controls = [self.norm_builder.normalize_control(r) for r in raw_controls]
 
         # 5. Classification

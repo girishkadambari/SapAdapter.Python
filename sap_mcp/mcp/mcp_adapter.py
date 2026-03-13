@@ -38,7 +38,12 @@ class McpAdapter:
             elif name == "observe_screen":
                 sid = arguments.get("session_id")
                 include_ss = arguments.get("include_screenshot", False)
-                observation = await self.observation_builder.build(sid, include_screenshot=include_ss)
+                force_rec = arguments.get("force_recursive", False)
+                observation = await self.observation_builder.build(
+                    sid, 
+                    include_screenshot=include_ss, 
+                    force_recursive=force_rec
+                )
                 return {"content": [{"type": "text", "text": observation.model_dump_json()}]}
 
             elif name == "execute_action":
