@@ -3,6 +3,15 @@ from pathlib import Path
 from typing import Dict, Any, List, Set
 from enum import Enum
 
+class ScreenType(str, Enum):
+    SEARCH_INPUT = "SEARCH_INPUT"       # Initial screen for searching/selecting records
+    DETAIL_VIEW = "DETAIL_VIEW"         # Display/Edit view of a specific record
+    GRID_LIST = "GRID_LIST"             # ALV Grid or Table-heavy list
+    DASHBOARD = "DASHBOARD"           # Main menu or overview screen with many icons/tiles
+    MENU_TREE = "MENU_TREE"           # Easy Access menu or similar tree structure
+    POPUP_DIALOG = "POPUP_DIALOG"     # Small modal dialogs
+    UNKNOWN = "UNKNOWN"
+
 class Config:
     """
     Centralized configuration for the SAP MCP Server.
@@ -18,48 +27,39 @@ class Config:
     DEFAULT_VKEY_CANCEL = 12
     
     # Observation Settings
-    MAX_RECURSION_DEPTH = 10
+    MAX_RECURSION_DEPTH = 100
     SCREENSHOT_QUALITY = 80
     
     # Tool Naming Conventions
     TOOL_PREFIX = "sap_"
     
+    SCREEN_SIGNATURES = {
+        ScreenType.SEARCH_INPUT: {
+            "required_types": {"GuiCTextField", "GuiButton"},
+            "preferred_labels": {"Search", "Execute", "Find", "Selection"},
+            "max_tables": 0
+        },
+        ScreenType.DETAIL_VIEW: {
+            "required_types": {"GuiTextField", "GuiLabel"},
+            "preferred_labels": {"Display", "Change", "General Data", "Header"},
+            "min_controls": 20
+        },
+        ScreenType.GRID_LIST: {
+            "required_types": {"GuiGridView", "GuiShell"},
+            "min_tables": 1
+        },
+        ScreenType.MENU_TREE: {
+            "required_types": {"GuiTree"}
+        },
+        ScreenType.DASHBOARD: {
+            "required_types": {"GuiImage", "GuiButton"},
+            "max_text_fields": 5
+        }
+    }
+
     @classmethod
     def get_screenshot_path(cls, filename: str) -> str:
         return str(cls.TEMP_DIR / filename)
-
-class ScreenType(str, Enum):
-    SEARCH_INPUT = "SEARCH_INPUT"       # Initial screen for searching/selecting records
-    DETAIL_VIEW = "DETAIL_VIEW"         # Display/Edit view of a specific record
-    GRID_LIST = "GRID_LIST"             # ALV Grid or Table-heavy list
-    DASHBOARD = "DASHBOARD"           # Main menu or overview screen with many icons/tiles
-    MENU_TREE = "MENU_TREE"           # Easy Access menu or similar tree structure
-    POPUP_DIALOG = "POPUP_DIALOG"     # Small modal dialogs
-    UNKNOWN = "UNKNOWN"
-
-SCREEN_SIGNATURES = {
-    ScreenType.SEARCH_INPUT: {
-        "required_types": {"GuiCTextField", "GuiButton"},
-        "preferred_labels": {"Search", "Execute", "Find", "Selection"},
-        "max_tables": 0
-    },
-    ScreenType.DETAIL_VIEW: {
-        "required_types": {"GuiTextField", "GuiLabel"},
-        "preferred_labels": {"Display", "Change", "General Data", "Header"},
-        "min_controls": 20
-    },
-    ScreenType.GRID_LIST: {
-        "required_types": {"GuiGridView", "GuiShell"},
-        "min_tables": 1
-    },
-    ScreenType.MENU_TREE: {
-        "required_types": {"GuiTree"}
-    },
-    ScreenType.DASHBOARD: {
-        "required_types": {"GuiImage", "GuiButton"},
-        "max_text_fields": 5
-    }
-}
 
 # Action Types as constants for predictability
 class ActionTypes:

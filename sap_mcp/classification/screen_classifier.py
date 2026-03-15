@@ -2,7 +2,7 @@ from typing import List, Dict, Any
 from loguru import logger
 from ..schemas.observation import ScreenObservation
 from ..schemas.control import Control
-from ..core.config import Config, ScreenType
+from ..core.config import Config, ScreenType, SapGuiTypes
 
 class ScreenClassifier:
     """

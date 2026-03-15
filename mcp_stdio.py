@@ -1,5 +1,6 @@
 import sys
 import json
+# Minor change to trigger server reload
 import asyncio
 from loguru import logger
 from sap_mcp.runtime.sap_runtime import SapRuntime

@@ -115,8 +115,10 @@ class ScreenObservationBuilder:
         def scan(component):
             objects.append(component)
             if hasattr(component, "Children"):
-                for i in range(component.Children.Count):
-                    scan(component.Children(i))
+                children = component.Children
+                if children is not None:
+                    for i in range(children.Count):
+                        scan(children(i))
                     
         scan(session)
         return objects

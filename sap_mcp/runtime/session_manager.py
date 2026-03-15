@@ -26,14 +26,22 @@ class SessionManager:
             sap_gui_auto = win32com.client.GetObject("SAPGUI")
             application = sap_gui_auto.GetScriptingEngine
             
-            for i in range(application.Children.Count):
-                connection = application.Children(i)
+            children = application.Children
+            if children is None:
+                return []
+                
+            for i in range(children.Count):
+                connection = children(i)
                 
                 # Active sessions are children of a connection
                 # Using .Sessions is more explicit for SAP GUI
                 try:
-                    for j in range(connection.Sessions.Count):
-                        session = connection.Sessions(j)
+                    sessions_coll = connection.Sessions
+                    if sessions_coll is None:
+                        continue
+                        
+                    for j in range(sessions_coll.Count):
+                        session = sessions_coll(j)
                         info = session.Info
                         session_id = f"{i}-{j}"
                         

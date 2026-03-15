@@ -14,7 +14,7 @@ class ControlEnricher:
         control.supported_methods = self._define_methods(control.subtype, control.editable)
         
         # Link tools to the methods for agentic guidance
-        control.actions = [m.tool_name for m in control.supported_methods]
+        control.actions = [m.tool for m in control.supported_methods]
         
         return control
 
@@ -26,64 +26,72 @@ class ControlEnricher:
         
         if subtype == ControlSubtypes.BUTTON:
             methods.append(ActionDefinition(
-                name=ActionTypes.PRESS_BUTTON,
-                tool_name="sap_shell_action",
+                name="press",
+                tool="sap_shell_action",
+                action_type=ActionTypes.PRESS_BUTTON,
                 description="Clicks the button"
             ))
             
         elif subtype == ControlSubtypes.TEXT:
             if editable:
                 methods.append(ActionDefinition(
-                    name=ActionTypes.SET_FIELD,
-                    tool_name="sap_interact_field",
+                    name="set_text",
+                    tool="sap_interact_field",
+                    action_type=ActionTypes.SET_FIELD,
                     description="Sets the text value"
                 ))
                 
         elif subtype == ControlSubtypes.CHECKBOX:
             methods.append(ActionDefinition(
-                name=ActionTypes.SET_CHECKBOX,
-                tool_name="sap_interact_field",
+                name="set_state",
+                tool="sap_interact_field",
+                action_type=ActionTypes.SET_CHECKBOX,
                 description="Checks/Unchecks the box"
             ))
             
         elif subtype == ControlSubtypes.RADIO:
             methods.append(ActionDefinition(
-                name=ActionTypes.SELECT_RADIO,
-                tool_name="sap_interact_field",
+                name="select",
+                tool="sap_interact_field",
+                action_type=ActionTypes.SELECT_RADIO,
                 description="Selects the radio option"
             ))
             
         elif subtype == ControlSubtypes.COMBOBOX:
             methods.append(ActionDefinition(
-                name=ActionTypes.SET_FIELD,
-                tool_name="sap_interact_field",
+                name="select_item",
+                tool="sap_interact_field",
+                action_type=ActionTypes.SET_FIELD,
                 description="Selects an item by Key"
             ))
             
         elif subtype == ControlSubtypes.TABLE:
             methods.append(ActionDefinition(
-                name=ActionTypes.SET_CELL_DATA,
-                tool_name="sap_table_action",
+                name="set_cell",
+                tool="sap_table_action",
+                action_type=ActionTypes.SET_CELL_DATA,
                 description="Writes to a specific cell"
             ))
             methods.append(ActionDefinition(
-                name=ActionTypes.TABLE_BATCH_FILL,
-                tool_name="sap_table_action",
+                name="batch_fill",
+                tool="sap_table_action",
+                action_type=ActionTypes.TABLE_BATCH_FILL,
                 description="Fills multiple rows efficiently"
             ))
             
         elif subtype in (ControlSubtypes.GRID, ControlSubtypes.TREE):
-            # Generic shell handler for complex shells
             methods.append(ActionDefinition(
                 name="click",
-                tool_name="sap_shell_action",
+                tool="sap_shell_action",
+                action_type=ActionTypes.CLICK,
                 description="Interacts with shell component"
             ))
             
         elif subtype == ControlSubtypes.TAB:
             methods.append(ActionDefinition(
-                name=ActionTypes.SELECT_TAB,
-                tool_name="sap_interact_field",
+                name="select",
+                tool="sap_interact_field",
+                action_type=ActionTypes.SELECT_TAB,
                 description="Selects the tab"
             ))
             
