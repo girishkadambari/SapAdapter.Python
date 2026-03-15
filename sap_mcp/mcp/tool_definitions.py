@@ -132,10 +132,15 @@ def get_tool_definitions() -> List[Dict[str, Any]]:
                 "properties": {
                     "session_id": { "type": "string" },
                     "target_id": { "type": "string" },
-                    "action_type": { "type": "string", "enum": ["set_cell_data", "get_cell_data", "activate_cell", "select_row", "find_row_by_text"] },
+                    "action_type": { "type": "string", "enum": ["set_cell_data", "get_cell_data", "activate_cell", "select_row", "find_row_by_text", "table_batch_fill"] },
                     "row": { "type": "integer", "description": "Logical row index starting from 0." },
                     "column": { "type": "string", "description": "The technical column name or numeric index." },
-                    "value": { "type": "string", "description": "Input value or search criterion." }
+                    "value": { "type": "string", "description": "Input value or search criterion." },
+                    "rows": { 
+                        "type": "array", 
+                        "description": "Used only for table_batch_fill. List of {row, data: {col: val}} objects.",
+                        "items": { "type": "object" }
+                    }
                 },
                 "required": ["session_id", "target_id", "action_type"]
             }
@@ -209,6 +214,52 @@ def get_tool_definitions() -> List[Dict[str, Any]]:
                     }
                 },
                 "required": ["session_id", "actions"]
+            }
+        },
+        {
+            "name": "interaction_search_help_select",
+            "description": (
+                "PURPOSE: Semantic selection from an SAP Search Help (F4) hit list.\n"
+                "WHEN TO USE: Use this after a search help hit-list appears. "
+                "It automatically detects if the list is a modern GridView or a legacy amodal list. "
+                "It attempts to select the row and confirm the selection."
+            ),
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "session_id": { "type": "string" },
+                    "row": { "type": "integer", "description": "The row index to select (starting from 0).", "default": 0 },
+                    "value": { "type": "string", "description": "Optional: Match the row by text value." }
+                },
+                "required": ["session_id"]
+            }
+        },
+        {
+            "name": "get_sap_context",
+            "description": (
+                "PURPOSE: Fast retrieval of current SAP session context.\n"
+                "WHEN TO USE: Use to verify the current transaction, program, dynpro, and status bar without a full screen dump."
+            ),
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "session_id": { "type": "string" }
+                },
+                "required": ["session_id"]
+            }
+        },
+        {
+            "name": "get_status_and_incompletion",
+            "description": (
+                "PURPOSE: Comprehensive check of document status and incompletion logs.\n"
+                "WHEN TO USE: Use before saving a document to ensure no blocking errors exist."
+            ),
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "session_id": { "type": "string" }
+                },
+                "required": ["session_id"]
             }
         }
     ]

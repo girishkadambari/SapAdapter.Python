@@ -121,7 +121,8 @@ class McpAdapter:
                     params={
                         "row": arguments.get("row"),
                         "column": arguments.get("column"),
-                        "value": arguments.get("value")
+                        "value": arguments.get("value"),
+                        "rows": arguments.get("rows")
                     }
                 )
                 result = await self.action_dispatcher.execute(request)
@@ -186,7 +187,29 @@ class McpAdapter:
                 entity_type = arguments["entity_type"]
                 observation = await self.observation_builder.build(sid)
                 extraction = self.entity_extractor.extract_entity(observation, entity_type)
-                return {"content": [{"type": "text", "text": extraction.model_dump_json()}]}
+                return extraction.model_dump_json() if hasattr(extraction, 'model_dump_json') else str(extraction)
+            
+            elif name == "get_sap_context":
+                sid = arguments.get("session_id")
+                context = await self.observation_builder.build_context(sid)
+                return {"content": [{"type": "text", "text": str(context)}]}
+
+            elif name == "get_status_and_incompletion":
+                sid = arguments.get("session_id")
+                verification = await self.observation_builder.build_verification(sid)
+                return {"content": [{"type": "text", "text": str(verification)}]}
+
+            elif name == "interaction_search_help_select":
+                request = ActionRequest(
+                    session_id=arguments["session_id"],
+                    action_type="interaction_search_help_select",
+                    params={
+                        "row": arguments.get("row", 0),
+                        "value": arguments.get("value")
+                    }
+                )
+                result = await self.action_dispatcher.execute(request)
+                return {"content": [{"type": "text", "text": result.model_dump_json()}]}
 
             else:
                 raise ValueError(f"Unknown tool: {name}")

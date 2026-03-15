@@ -4,6 +4,7 @@ from .field_handler import FieldHandler
 from .navigation_handler import NavigationHandler
 from .table_handler import TableHandler
 from .shell_handler import ShellHandler
+from .search_help_handler import SearchHelpHandler
 
 __all__ = [
     "ActionHandler",
@@ -11,5 +12,6 @@ __all__ = [
     "FieldHandler",
     "NavigationHandler",
     "TableHandler",
-    "ShellHandler"
+    "ShellHandler",
+    "SearchHelpHandler"
 ]

@@ -113,6 +113,25 @@ class TableHandler(ActionHandler):
                 else:
                     return ActionResult(success=False, action_type=action, target_id=target_id, error=f"Text '{val}' not found in column '{col}'")
 
+            elif action == "table_batch_fill":
+                rows_data = params.get("rows", [])
+                results = []
+                for row_item in rows_data:
+                    r = int(row_item.get("row", 0))
+                    data = row_item.get("data", {})
+                    for c_name, val in data.items():
+                        self._scroll_to(target, ctype, r)
+                        self._set_cell(target, ctype, r, c_name, val)
+                    results.append({"row": r, "status": "SET"})
+                
+                return ActionResult(
+                    success=True,
+                    action_type=action,
+                    target_id=target_id,
+                    message=f"Batch filled {len(results)} rows",
+                    completed_action_details={"results": results}
+                )
+
             else:
                 raise ValueError(f"Unsupported table action: {action}")
 
@@ -126,8 +145,13 @@ class TableHandler(ActionHandler):
         """Ensures the target row is visible/accessible."""
         try:
             if ctype == "GuiTableControl":
-                target.VerticalScrollbar.Position = row
+                # TableControl scrolling is strictly via VerticalScrollbar
+                scrollbar = target.VerticalScrollbar
+                if row < scrollbar.Minimum or row > scrollbar.Maximum:
+                    logger.warning(f"Row {row} out of scroll range ({scrollbar.Minimum}-{scrollbar.Maximum})")
+                scrollbar.Position = row
             elif "GridView" in ctype or "GridView" in str(getattr(target, "SubType", "")):
+                # GridView logic
                 target.FirstVisibleRow = row
         except Exception as e:
             logger.debug(f"Scrolling hint failed (might not be needed): {e}")

@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any, Optional, Dict
 from datetime import datetime, timezone
 from ..schemas.observation import ScreenObservation, StatusBar, Modal, ValidationSummary
 from ..runtime.sap_runtime import SapRuntime
@@ -125,6 +125,8 @@ class ScreenObservationBuilder:
             transaction=str(info.Transaction),
             title=title,
             program=str(info.Program),
+            program_name=str(info.Program),
+            dynpro_number=str(info.ScreenNumber),
             status_bar=sb_model,
             modal=modal_model,
             controls=norm_controls,
@@ -133,6 +135,39 @@ class ScreenObservationBuilder:
             screenshot_data=screenshot_data,
             validation_summary=ValidationSummary(is_valid=True)
         )
+
+    async def build_context(self, session_id: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Lightweight capture of session context.
+        """
+        session = self.runtime.get_session(session_id)
+        info = session.Info
+        win = session.ActiveWindow
+        
+        return {
+            "session_id": str(session_id or self.runtime.session_manager.active_session_id),
+            "transaction": str(info.Transaction),
+            "program": str(info.Program),
+            "dynpro_number": str(info.ScreenNumber),
+            "title": str(win.Text) if win else "SAP",
+            "status_bar": self._capture_status_bar(session).model_dump(),
+            "is_modal": bool(self.runtime.modal_guard.detect(session))
+        }
+
+    async def build_verification(self, session_id: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Comprehensive check for save readiness (Status Bar + Incompletion).
+        """
+        context = await self.build_context(session_id)
+        
+        # Heuristic: Check status bar for blocking errors
+        is_error = context["status_bar"]["type"] in ("E", "A")
+        
+        return {
+            "context": context,
+            "is_ready_to_save": not is_error,
+            "messages": [context["status_bar"]["text"]] if context["status_bar"]["text"] else []
+        }
 
     def _capture_status_bar(self, session: Any) -> StatusBar:
         try:

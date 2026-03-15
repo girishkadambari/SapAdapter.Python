@@ -10,7 +10,7 @@ from .wait_strategy import WaitStrategy
 from ..observation.screen_observation_builder import ScreenObservationBuilder
 
 from .action_registry import ActionRegistry
-from .handlers import ButtonHandler, FieldHandler, NavigationHandler, TableHandler, ShellHandler
+from .handlers import ButtonHandler, FieldHandler, NavigationHandler, TableHandler, ShellHandler, SearchHelpHandler
 
 class ActionDispatcher:
     """
@@ -64,6 +64,9 @@ class ActionDispatcher:
         self.registry.register("press_context_button", ShellHandler)
         self.registry.register("select_menu_item", ShellHandler)
         self.registry.register("click_shell", ShellHandler)
+        
+        # Register Search Help actions
+        self.registry.register("interaction_search_help_select", SearchHelpHandler)
 
     async def execute(self, request: ActionRequest) -> ActionResult:
         """

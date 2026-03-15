@@ -20,10 +20,23 @@ class NavigationHandler(ActionHandler):
                 if not tcode:
                     raise ValueError("navigate_tcode requires 'tcode' parameter")
                 
+                # MODAL RESILIENCE: Check for blocking modals before navigation
+                session_id = request.session_id
+                runtime_session = self.runtime.get_session(session_id)
+                modal = self.runtime.modal_guard.detect(runtime_session)
+                if modal:
+                    logger.warning(f"Navigation blocked by modal: {modal.title}")
+                    return ActionResult(
+                        success=False,
+                        action_type=request.action_type,
+                        target_id=request.target_id,
+                        error=f"Navigation blocked by modal dialog: '{modal.title}'. Close the modal before navigating."
+                    )
+                
                 # Use standard command field navigation
-                cmd_field = session.FindById("wnd[0]/tbar[0]/okcd")
+                cmd_field = runtime_session.FindById("wnd[0]/tbar[0]/okcd")
                 cmd_field.Text = tcode
-                session.ActiveWindow.sendVKey(0)  # Press Enter
+                runtime_session.ActiveWindow.sendVKey(0)  # Press Enter
                 logger.info(f"Navigated to T-Code: {tcode}")
                 
             else:

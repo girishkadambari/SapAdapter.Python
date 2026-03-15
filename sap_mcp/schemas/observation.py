@@ -37,6 +37,8 @@ class ScreenObservation(BaseModel):
     transaction: str = Field(..., description="The current Transaction Code (T-Code)")
     title: str = Field(..., description="The window title")
     program: Optional[str] = Field(None, description="The ABAP program name")
+    program_name: Optional[str] = Field(None, description="Technical program name (D020, SAPMV45A)")
+    dynpro_number: Optional[str] = Field(None, description="SAP Screen (Dynpro) number")
     status_bar: StatusBar = Field(..., description="The current status bar state")
     modal: Optional[Modal] = Field(None, description="Details of any active modal dialog")
     controls: List[Control] = Field(default_factory=list, description="List of all visible controls")
