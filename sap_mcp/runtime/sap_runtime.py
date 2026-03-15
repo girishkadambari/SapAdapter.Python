@@ -1,10 +1,10 @@
 from typing import Any, Optional, List, Dict
 from loguru import logger
 from ..schemas.observation import ScreenObservation
-from .com_executor import ComExecutor
-from .session_manager import SessionManager
 from .busy_guard import BusyGuard
 from .modal_guard import ModalGuard
+from .com_executor import ComExecutor
+from .session_manager import SessionManager
 
 class SapRuntime:
     """
@@ -44,19 +44,6 @@ class SapRuntime:
         connection = application.Children(conn_idx)
         return connection.Children(sess_idx)
 
-    async def ensure_ready(self, session: Any):
-        """
-        Waits for SAP to be idle and ensures no blocking modals are present.
-        """
-        await self.busy_guard.wait_for_idle(session)
-        
-        modal = self.modal_guard.detect(session)
-        if modal:
-            logger.warning(f"Modal window detected: {modal.title}")
-            # We don't raise here yet, just log. 
-            # Action execution will decide whether to fail based on context.
-            return modal
-        return None
 
     def list_sessions(self) -> List[Dict]:
         """

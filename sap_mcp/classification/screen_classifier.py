@@ -2,11 +2,12 @@ from typing import List, Dict, Any
 from loguru import logger
 from ..schemas.observation import ScreenObservation
 from ..schemas.control import Control
-from .patterns import ScreenType, SIGNATURES
+from ..core.config import Config, ScreenType
 
 class ScreenClassifier:
     """
     Engine for identifying the functional type of a SAP screen.
+    Now strictly data-driven via Config.SCREEN_SIGNATURES.
     """
     
     def classify(self, controls: List[Control], title: str) -> ScreenType:
@@ -16,43 +17,26 @@ class ScreenClassifier:
         if not controls:
             return ScreenType.UNKNOWN
             
-        # 1. Gather statistics
         control_types = {c.type for c in controls}
-        control_count = len(controls)
-        table_count = sum(1 for c in controls if c.type in {"GuiTableControl", "GuiGridView", "GuiShell"})
-        text_field_count = sum(1 for c in controls if c.type in {"GuiTextField", "GuiCTextField"})
-        
         title_upper = title.upper()
         
-        # 2. Heuristic Matching
-        
-        # Grid List is usually very distinct
-        if "GuiGridView" in control_types or ("GuiTableControl" in control_types and control_count < 50):
-            return ScreenType.GRID_LIST
-            
-        # Menu Tree (Easy Access)
-        if "GuiTree" in control_types:
-            return ScreenType.MENU_TREE
-            
-        # Search Input
-        if any(kw in title_upper for kw in ["SEARCH", "SELECT", "FIND", "INITIAL"]):
-            if text_field_count > 0 and text_field_count < 15:
-                return ScreenType.SEARCH_INPUT
-                
-        # Detail View
-        if any(kw in title_upper for kw in ["DISPLAY", "CHANGE", "CREATE", "HEADER"]):
-            if control_count > 15:
-                return ScreenType.DETAIL_VIEW
-                
-        # Dashboard/Home
-        if "GuiImage" in control_types and text_field_count < 5:
-            return ScreenType.DASHBOARD
-
-        # 3. Fallback to signatures
-        for s_type, sig in SIGNATURES.items():
+        # 1. Signature-based Matching (Reliable)
+        for s_type, sig in Config.SCREEN_SIGNATURES.items():
             req_types = sig.get("required_types", set())
             if req_types and req_types.issubset(control_types):
-                return s_type
+                # Additional title check if provided
+                pref_labels = sig.get("preferred_labels", set())
+                if not pref_labels or any(lab.upper() in title_upper for lab in pref_labels):
+                    return s_type
+        
+        # 2. Heuristic Heuristics (Fallback)
+        if SapGuiTypes.GRID_VIEW in control_types:
+            return ScreenType.GRID_LIST
+        if SapGuiTypes.TREE in control_types:
+            return ScreenType.MENU_TREE
+            
+        if any(kw in title_upper for kw in ["DISPLAY", "CHANGE", "CREATE"]):
+            return ScreenType.DETAIL_VIEW
                 
         return ScreenType.UNKNOWN
 

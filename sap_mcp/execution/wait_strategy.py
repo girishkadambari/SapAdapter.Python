@@ -1,43 +1,37 @@
 import asyncio
-import time
-from typing import Any, Callable, Optional
+from typing import Any, Optional
 from loguru import logger
 from ..runtime.sap_runtime import SapRuntime
-from ..runtime.busy_guard import BusyGuard
 
 class WaitStrategy:
     """
-    Provides deterministic wait logic for SAP GUI state transitions.
+    Standardizes "wait for result" and "ensure ready" logic.
+    Provides consistent behavior across all action handlers.
     """
     
     def __init__(self, runtime: SapRuntime):
         self.runtime = runtime
 
-    async def wait_for_idle(self, session: Any, timeout: float = 30.0):
+    async def wait_for_ready(self, session: Any, timeout: int = 30):
         """
-        Waits until the SAP session is no longer busy.
+        Waits for SAP to be idle and ensures no blocking modals.
         """
+        start_time = asyncio.get_event_loop().time()
+        
+        # 1. Busy Guard
         await self.runtime.busy_guard.wait_for_idle(session, timeout=timeout)
+        
+        # 2. Modal Guard
+        modal = self.runtime.modal_guard.detect(session)
+        if modal:
+            logger.warning(f"Blocking modal detected during wait: {modal.title}")
+            return modal
+        
+        return None
 
-    async def wait_for_condition(self, condition_fn: Callable[[], bool], timeout: float = 10.0, poll_interval: float = 0.5) -> bool:
+    async def wait_after_action(self, session: Any, timeout: int = 5):
         """
-        Polls until a condition is met or timeout occurs.
+        Brief wait after an action to let the GUI settle.
         """
-        start_time = time.time()
-        while time.time() - start_time < timeout:
-            if condition_fn():
-                return True
-            await asyncio.sleep(poll_interval)
-        return False
-
-    async def wait_for_status_change(self, session: Any, initial_text: str, timeout: float = 10.0) -> bool:
-        """
-        Waits until the status bar text changes from its initial value.
-        """
-        def status_changed():
-            try:
-                return str(session.ActiveWindow.StatusBar.Text) != initial_text
-            except:
-                return False
-                
-        return await self.wait_for_condition(status_changed, timeout=timeout)
+        await asyncio.sleep(0.5)  # Micro-wait
+        await self.runtime.busy_guard.wait_for_idle(session, timeout=timeout)

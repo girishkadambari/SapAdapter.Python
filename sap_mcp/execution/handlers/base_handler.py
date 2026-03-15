@@ -29,3 +29,29 @@ class ActionHandler(ABC):
         if target_id.startswith("/"):
             return target_id.lstrip("/")
         return target_id
+
+    def _get_value(self, control: Any) -> Any:
+        """Safely extracts value from common SAP controls."""
+        if hasattr(control, "Text"):
+            return control.Text
+        if hasattr(control, "Key"):
+            return control.Key
+        if hasattr(control, "Selected"):
+            return control.Selected
+        return None
+
+    def _verify_value(self, control: Any, requested_value: Any) -> Dict[str, Any]:
+        """Compares requested value with actual read-back value."""
+        actual = self._get_value(control)
+        requested_str = str(requested_value).strip().lower()
+        actual_str = str(actual).strip().lower()
+        
+        # Simple string-based equality
+        success = requested_str == actual_str
+        
+        return {
+            "success": success,
+            "actual": actual,
+            "requested": requested_value,
+            "outcome": "SUCCESS" if success else "MISMATCH"
+        }

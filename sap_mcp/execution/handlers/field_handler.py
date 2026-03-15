@@ -1,7 +1,8 @@
 from typing import Any
-from ...schemas import ActionRequest, ActionResult
-from .base_handler import ActionHandler
 from loguru import logger
+from ...schemas import ActionRequest, ActionResult
+from ...core.config import ActionTypes, SapGuiTypes
+from .base_handler import ActionHandler
 
 class FieldHandler(ActionHandler):
     """
@@ -14,58 +15,45 @@ class FieldHandler(ActionHandler):
         
         try:
             target = session.FindById(target_id)
+            old_value = self._get_value(target)
             
-            old_value = None
-            if hasattr(target, "Text"):
-                old_value = target.Text
-            elif hasattr(target, "Key"):
-                old_value = target.Key
-                
-            if request.action_type in ("set_field", "set_value"):
-                if target.Type == "GuiComboBox":
+            action = request.action_type
+            
+            if action == ActionTypes.SET_FIELD:
+                if target.Type == SapGuiTypes.COMBOBOX:
                     target.Key = str(value)
                 else:
                     target.Text = str(value)
-            elif request.action_type == "set_checkbox":
+            elif action == ActionTypes.SET_CHECKBOX:
                 if hasattr(target, "Key"):
                     target.Key = value
                 else:
                     target.Selected = bool(value)
-            elif request.action_type == "select_radio":
+            elif action == ActionTypes.SELECT_RADIO:
                 target.Select()
             else:
-                raise ValueError(f"Unknown field action: {request.action_type}")
+                raise ValueError(f"Unknown field action: {action}")
             
             # --- VERIFIED WRITE BLOCK ---
-            # After interaction, read back the value to verify
-            actual_new_value = None
-            if hasattr(target, "Text"):
-                actual_new_value = target.Text
-            elif hasattr(target, "Key"):
-                actual_new_value = target.Key
-            elif hasattr(target, "Selected"):
-                actual_new_value = target.Selected
-
-            verification_outcome = "SUCCESS"
+            verification = self._verify_value(target, value)
             warnings = []
             
-            # Simple check for direct value equality
-            # (Note: Some SAP fields might format values, e.g. "100" -> "100.00", 
-            # so we use loose comparison or just log the diff)
-            if str(actual_new_value).strip() != str(value).strip() and request.action_type != "select_radio":
-                warnings.append(f"Field was set to '{value}' but reads back as '{actual_new_value}'. This may be due to SAP formatting or a silent failure.")
-                verification_outcome = "MISMATCH"
+            if not verification["success"] and action != ActionTypes.SELECT_RADIO:
+                warnings.append(
+                    f"Field was set to '{value}' but reads back as '{verification['actual']}'. "
+                    "This may be due to SAP formatting or a silent failure."
+                )
 
             return ActionResult(
                 success=True,
-                action_type=request.action_type,
+                action_type=action,
                 target_id=request.target_id,
-                message=f"Field updated successfully",
+                message="Field updated successfully",
                 completed_action_details={
                     "old_value": old_value, 
                     "requested_value": value,
-                    "actual_value": actual_new_value,
-                    "verification_outcome": verification_outcome
+                    "actual_value": verification["actual"],
+                    "verification_outcome": verification["outcome"]
                 },
                 warnings=warnings
             )

@@ -41,21 +41,24 @@ class WebSocketServer:
                     # 2. Legacy Protocol Handle
                     req_id = data.get("id", "none")
                     req_type = data.get("type", "unknown")
+                    payload = data.get("payload", {})
+                    
                     logger.debug(f"Legacy Request: {req_type} ({req_id})")
                     
                     try:
-                        result = await self.router.handle(req_type, data.get("payload", {}), context={"ws": websocket})
+                        # Routing is delegated to self.router
+                        result = await self.router.handle(req_type, payload, context={"ws": websocket})
                         response = {
                             "id": req_id,
                             "ok": True,
                             "payload": result
                         }
                     except Exception as e:
-                        logger.error(f"Handler error: {str(e)}")
+                        logger.error(f"Router error while handling {req_type}: {str(e)}")
                         response = {
                             "id": req_id,
                             "ok": False,
-                            "error": {"code": "HANDLER_ERROR", "message": str(e)}
+                            "error": {"code": "ROUTING_ERROR", "message": str(e)}
                         }
                     
                     await websocket.send(json.dumps(response))

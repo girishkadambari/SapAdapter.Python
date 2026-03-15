@@ -1,6 +1,7 @@
 from typing import Any, Optional, List
 from loguru import logger
 from ..schemas.observation import Modal
+from ..core.config import SapGuiTypes
 
 class ModalGuard:
     """
@@ -12,7 +13,7 @@ class ModalGuard:
         """Returns info about the active modal window if one exists."""
         try:
             active_win = session.ActiveWindow
-            if active_win and active_win.Type == "GuiModalWindow":
+            if active_win and active_win.Type == SapGuiTypes.MODAL_WINDOW:
                 buttons = ModalGuard._extract_buttons(active_win)
                 text = ModalGuard._extract_modal_text(active_win)
                 title = str(active_win.Text)
@@ -54,7 +55,7 @@ class ModalGuard:
             def _find_btns(container):
                 for i in range(container.Children.Count):
                     child = container.Children(i)
-                    if child.Type == "GuiButton":
+                    if child.Type == SapGuiTypes.BUTTON:
                         buttons.append(str(child.Text) or str(child.Name))
                     if hasattr(child, "Children"):
                         _find_btns(child)
@@ -69,9 +70,9 @@ class ModalGuard:
             def _find_text(container):
                 for i in range(container.Children.Count):
                     child = container.Children(i)
-                    if child.Type == "GuiLabel":
+                    if child.Type == SapGuiTypes.LABEL:
                         texts.append(str(child.Text))
-                    elif child.Type == "GuiTextField" and not child.Changeable:
+                    elif child.Type == SapGuiTypes.TEXT_FIELD and not child.Changeable:
                         texts.append(str(child.Text))
                     if hasattr(child, "Children"):
                         _find_text(child)

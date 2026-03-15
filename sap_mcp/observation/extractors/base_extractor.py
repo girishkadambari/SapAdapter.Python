@@ -1,16 +1,17 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional
-from ..schemas.control import Control
+from ...schemas.control import Control
 
-class BaseControlHandler(ABC):
+class BaseControlExtractor(ABC):
     """
-    Abstract base class for all SAP control handlers.
+    Abstract base class for all SAP control extractors.
+    Focuses EXCLUSIVELY on property extraction from COM objects.
     """
     
     @abstractmethod
     def identify(self, control: Any) -> bool:
         """
-        Returns True if this handler can handle the given SAP control.
+        Returns True if this extractor can handle the given SAP control.
         """
         pass
 
@@ -18,13 +19,6 @@ class BaseControlHandler(ABC):
     def extract(self, control: Any) -> Control:
         """
         Extracts structured data from the SAP control into a canonical Control model.
-        """
-        pass
-
-    @abstractmethod
-    def get_supported_actions(self, control: Any) -> List[str]:
-        """
-        Returns a list of action types supported by this control.
         """
         pass
 

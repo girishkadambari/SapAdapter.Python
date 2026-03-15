@@ -2,6 +2,8 @@ import asyncio
 import os
 import json
 import pythoncom
+from typing import Optional
+
 from sap_mcp.utils.logger import setup_logger
 from sap_mcp.server.websocket import WebSocketServer
 from sap_mcp.server.router import CommandRouter
@@ -12,18 +14,19 @@ from sap_mcp.observation.screen_observation_builder import ScreenObservationBuil
 from sap_mcp.execution.action_dispatcher import ActionDispatcher
 from sap_mcp.schemas import ActionRequest
 
+# Standardized Core Instances
+runtime = SapRuntime()
+observation_builder = ScreenObservationBuilder(runtime)
+action_dispatcher = ActionDispatcher(runtime)
 
 # Setup Logger
 logger = setup_logger()
 
-# Global Instances for Legacy Support
-runtime = SapRuntime()
-observation_builder = ScreenObservationBuilder(runtime)
-action_dispatcher = ActionDispatcher(runtime)
-server = None
+# Global placeholder for Screen Monitor to broadcast
+server_instance: Optional[WebSocketServer] = None
 
 async def list_sessions_handler(ctx, payload):
-    logger.info("Listing SAP sessions via new runtime...")
+    logger.info("Listing SAP sessions...")
     return runtime.list_sessions()
 
 async def attach_session_handler(ctx, payload):
@@ -40,13 +43,15 @@ async def capture_snapshot_handler(ctx, payload):
     return observation.model_dump()
 
 async def execute_command_handler(ctx, payload):
-    # Map legacy payload to new ActionRequest
+    # Map incoming payload to ActionRequest contract
     session_id = payload.get("sessionId") or runtime.session_manager.active_session_id
-    action_type = payload.get("type", "press")
+    action_type = payload.get("type")
     target_id = payload.get("id") or payload.get("target_id")
     
     if not target_id:
-        raise ValueError("target_id (or 'id') is required for executeCommand")
+        raise ValueError("target_id is required for executeCommand")
+    if not action_type:
+        raise ValueError("action type is required for executeCommand")
         
     request = ActionRequest(
         session_id=str(session_id),
@@ -71,7 +76,7 @@ async def monitor_screen():
     while True:
         try:
             sid = runtime.session_manager.active_session_id
-            if sid and server:
+            if sid and server_instance:
                 session = runtime.get_session(sid)
                 info = session.Info
                 current_tx = str(info.Transaction)
@@ -79,7 +84,7 @@ async def monitor_screen():
                 
                 if current_tx != last_tx or current_title != last_title:
                     logger.info(f"Screen changed: {current_tx} - {current_title}")
-                    await server.broadcast("screen.changed", {
+                    await server_instance.broadcast("screen.changed", {
                         "sessionId": sid,
                         "transaction": current_tx,
                         "title": current_title
@@ -92,32 +97,33 @@ async def monitor_screen():
         await asyncio.sleep(2)
 
 async def main():
-    global server
+    global server_instance
     logger.info("Initializing SAP MCP Server")
     
-    # Initialize Core Components
+    # Initialize Routing
     router = CommandRouter()
     
-    # Initialize MCP Adapter and Server
+    # Initialize MCP Layer
     mcp_adapter = McpAdapter(runtime)
     mcp_server = McpServer(mcp_adapter)
     
-    # Register Legacy Protocol Handlers
+    # Register Protocol Handlers
     router.register("healthCheck", health_check_handler)
     router.register("listSessions", list_sessions_handler)
     router.register("attachSession", attach_session_handler)
     router.register("captureSnapshot", capture_snapshot_handler)
     router.register("executeCommand", execute_command_handler)
     
-    # Start Server
+    # Initialize Transport
     port = int(os.getenv("PORT", 8787))
-    server = WebSocketServer("0.0.0.0", port, router)
-    server.mcp_server = mcp_server
+    server_instance = WebSocketServer("0.0.0.0", port, router)
+    server_instance.mcp_server = mcp_server
     
     # Start Screen Monitor
     asyncio.create_task(monitor_screen())
     
-    await server.start()
+    # Run Server indefinitely
+    await server_instance.start()
 
 if __name__ == "__main__":
     try:

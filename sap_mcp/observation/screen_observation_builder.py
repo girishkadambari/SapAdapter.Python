@@ -1,21 +1,27 @@
-from typing import Any, Optional, Dict
+from typing import Any, Optional, Dict, List
 from datetime import datetime, timezone
+from loguru import logger
+
 from ..schemas.observation import ScreenObservation, StatusBar, Modal, ValidationSummary
 from ..runtime.sap_runtime import SapRuntime
 from .raw_snapshot_builder import RawSnapshotBuilder
-from .normalized_snapshot_builder import NormalizedSnapshotBuilder
+from .extractors.registry import ExtractorRegistry
+from .enricher import ControlEnricher
 from ..snapshot.screenshot_service import ScreenshotService
 from ..classification.screen_classifier import ScreenClassifier
+from ..core.config import ControlSubtypes
 
 class ScreenObservationBuilder:
     """
     Coordinates the capture of a full ScreenObservation.
+    Refactored to orchestrate Extractors and Enrichers following Phase 2 LLD.
     """
     
     def __init__(self, runtime: SapRuntime):
         self.runtime = runtime
         self.raw_builder = RawSnapshotBuilder()
-        self.norm_builder = NormalizedSnapshotBuilder()
+        self.extractor_registry = ExtractorRegistry()
+        self.enricher = ControlEnricher()
         self.screenshot_service = ScreenshotService()
         self.classifier = ScreenClassifier()
 
@@ -23,163 +29,116 @@ class ScreenObservationBuilder:
         self, 
         session_id: Optional[str] = None, 
         include_screenshot: bool = False, 
-        force_recursive: bool = False,
         mode: str = "FULL",
         target_id: Optional[str] = None
     ) -> ScreenObservation:
         """
         Main entry point to capture the current state.
-        Supported modes: FULL, SUMMARY, FOCUSED.
+        Orchestrates identification, extraction, enrichment, and classification.
         """
         session = self.runtime.get_session(session_id)
-        
-        # 1. Base Info
-        info = session.Info
         win = session.ActiveWindow
         
-        # 2. Status Bar
+        # 1. Base Info (StatusBar, Modal)
         sb_model = self._capture_status_bar(session)
-        
-        # 3. Modal Check
         modal_model = self.runtime.modal_guard.detect(session)
         
-        # 4. Controls
+        # 2. Control Collection
+        controls = []
         if mode == "FOCUSED" and target_id:
-            # Targeted extraction for a single control
             try:
                 control_obj = session.FindById(target_id)
-                raw_snapshot = self.raw_builder._extract_properties(control_obj)
-                norm_controls = [self.norm_builder.normalize_control(raw_snapshot)]
+                controls = self._process_controls([control_obj])
             except Exception as e:
                 logger.warning(f"Focused extraction failed for {target_id}: {str(e)}")
-                norm_controls = []
         else:
-            raw_snapshot = self.raw_builder.get_raw_snapshot(session)
-            
-            if raw_snapshot.get("is_optimized"):
-                norm_controls = self.norm_builder.normalize_optimized_tree(raw_snapshot["optimized_tree"])
-            else:
-                all_raw = [raw_snapshot] + raw_snapshot.get("children", [])
-                norm_controls = [self.norm_builder.normalize_control(r) for r in all_raw]
+            # Capture hierarchy
+            raw_com_objects = self._get_com_objects(session)
+            controls = self._process_controls(raw_com_objects)
 
             # Mode-based filtering
             if mode == "SUMMARY":
-                # Primary filter: Editable fields, key UI elements, and non-empty status bars
-                norm_controls = [
-                    c for c in norm_controls 
-                    if c.editable or c.subtype in ("button", "tab", "combobox", "statusbar")
+                # Filter to only relevant interactive controls
+                controls = [
+                    c for c in controls 
+                    if c.visible and (c.editable or c.subtype in ("button", "tab", "combobox", "statusbar"))
                 ]
-                
-                # Secondary filter: Remove "junk" layout containers or invisible buttons
-                norm_controls = [c for c in norm_controls if c.visible]
-                
-                # Context enrichment: Add semantic hints to controls
-                for c in norm_controls:
-                    if not c.label and c.id:
-                        # Extract potential semantic name from ID (e.g. txtRSYST-BNAME -> BNAME)
-                        parts = c.id.split("-")
-                        if len(parts) > 1:
-                            hint = parts[-1].lower()
-                            c.metadata["semantic_hint"] = hint
-                            # If label is truly empty, use hint as fallback
-                            if not c.label:
-                                c.label = hint.replace("_", " ").title()
 
-        # 5. Classification
+        # 3. Classification & Metadata
         title = str(win.Text) if win else "SAP"
-        screen_type = self.classifier.classify(norm_controls, title)
-        metadata = self.classifier.get_metadata(norm_controls, screen_type)
+        screen_type = self.classifier.classify(controls, title)
+        metadata = self.classifier.get_metadata(controls, screen_type)
 
-        # 6. Screenshot (Optional)
+        # 4. Screenshot
         screenshot_data = None
         if include_screenshot:
-            try:
-                hwnd = getattr(win, "Handle", 0)
-                if hwnd:
-                    img = self.screenshot_service.capture_window(int(hwnd))
-                    if img:
-                        screenshot_data = self.screenshot_service.to_base64(img)
-            except Exception as e:
-                logger.warning(f"Failed to capture screenshot during observation: {str(e)}")
-
-        # Verification context mapping:
-        # Help the agent know which tool to use for which control
-        for c in norm_controls:
-            if c.editable:
-                if c.subtype == "combobox":
-                    c.actions.append("sap_interact_field:set_field (via key)")
-                elif c.subtype == "table":
-                    c.actions.extend([
-                        "sap_table_action:set_cell_data",
-                        "sap_table_action:table_select_row",
-                        "sap_table_action:table_double_click_row",
-                        "sap_table_action:read_table_rows"
-                    ])
-                else:
-                    c.actions.append("sap_interact_field:set_field")
-            elif c.subtype == "button":
-                c.actions.append("sap_press_button")
+            screenshot_data = self._capture_screenshot(win)
 
         return ScreenObservation(
             session_id=str(session_id or self.runtime.session_manager.active_session_id),
-            transaction=str(info.Transaction),
+            transaction=str(session.Info.Transaction),
             title=title,
-            program=str(info.Program),
-            program_name=str(info.Program),
-            dynpro_number=str(info.ScreenNumber),
+            program=str(session.Info.Program),
+            program_name=str(session.Info.Program),
+            dynpro_number=str(session.Info.ScreenNumber),
             status_bar=sb_model,
             modal=modal_model,
-            controls=norm_controls,
+            controls=controls,
             screen_type=str(screen_type.value if hasattr(screen_type, "value") else screen_type),
             metadata=metadata,
             screenshot_data=screenshot_data,
             validation_summary=ValidationSummary(is_valid=True)
         )
 
-    async def build_context(self, session_id: Optional[str] = None) -> Dict[str, Any]:
+    def _process_controls(self, com_objects: List[Any]) -> List[Any]:
         """
-        Lightweight capture of session context.
+        Pipelines COM objects through Extraction and Enrichment.
         """
-        session = self.runtime.get_session(session_id)
-        info = session.Info
-        win = session.ActiveWindow
-        
-        return {
-            "session_id": str(session_id or self.runtime.session_manager.active_session_id),
-            "transaction": str(info.Transaction),
-            "program": str(info.Program),
-            "dynpro_number": str(info.ScreenNumber),
-            "title": str(win.Text) if win else "SAP",
-            "status_bar": self._capture_status_bar(session).model_dump(),
-            "is_modal": bool(self.runtime.modal_guard.detect(session))
-        }
+        processed = []
+        for obj in com_objects:
+            extractor = self.extractor_registry.get_extractor(obj)
+            if extractor:
+                control = extractor.extract(obj)
+                control = self.enricher.enrich(control)
+                processed.append(control)
+        return processed
 
-    async def build_verification(self, session_id: Optional[str] = None) -> Dict[str, Any]:
+    def _get_com_objects(self, session: Any) -> List[Any]:
         """
-        Comprehensive check for save readiness (Status Bar + Incompletion).
+        Retrieves raw COM objects from the session.
+        Uses RawSnapshotBuilder but returns objects instead of dicts.
         """
-        context = await self.build_context(session_id)
+        # Note: We need to modify RawSnapshotBuilder to return COM objects 
+        # or handle the logic here directly. For now, we'll use a simplified recursive scan.
+        objects = []
         
-        # Heuristic: Check status bar for blocking errors
-        is_error = context["status_bar"]["type"] in ("E", "A")
-        
-        return {
-            "context": context,
-            "is_ready_to_save": not is_error,
-            "messages": [context["status_bar"]["text"]] if context["status_bar"]["text"] else []
-        }
+        def scan(component):
+            objects.append(component)
+            if hasattr(component, "Children"):
+                for i in range(component.Children.Count):
+                    scan(component.Children(i))
+                    
+        scan(session)
+        return objects
 
     def _capture_status_bar(self, session: Any) -> StatusBar:
         try:
             sb = session.ActiveWindow.StatusBar
-            m_type = str(sb.MessageType)
-            if m_type == "None": m_type = ""
-            
             return StatusBar(
-                type=m_type,
+                type=str(sb.MessageType).replace("None", ""),
                 text=str(sb.Text),
                 msg_id=str(getattr(sb, "MessageId", None)),
                 msg_no=str(getattr(sb, "MessageNumber", None))
             )
         except:
             return StatusBar(type="", text="")
+
+    def _capture_screenshot(self, win: Any) -> Optional[str]:
+        try:
+            hwnd = getattr(win, "Handle", 0)
+            if hwnd:
+                img = self.screenshot_service.capture_window(int(hwnd))
+                return self.screenshot_service.to_base64(img)
+        except Exception as e:
+            logger.warning(f"Screenshot failed: {e}")
+        return None

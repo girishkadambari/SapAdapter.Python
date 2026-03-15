@@ -1,35 +1,44 @@
 from typing import Any
-from ...schemas import ActionRequest, ActionResult
-from .base_handler import ActionHandler
 from loguru import logger
+from ...schemas import ActionRequest, ActionResult
+from ...core.config import ActionTypes, SapGuiTypes
+from .base_handler import ActionHandler
 
 class ButtonHandler(ActionHandler):
     """
-    Handles button presses in SAP GUI.
-    Supports action: `press_button`
+    Handles button presses and tab selections in SAP GUI.
     """
     async def execute(self, session: Any, request: ActionRequest) -> ActionResult:
         target_id = self._normalize_target_id(request.target_id)
+        action = request.action_type
         
         try:
             target = session.FindById(target_id)
-            if request.action_type == "select_tab" or target.Type == "GuiTab":
+            
+            if action == ActionTypes.SELECT_TAB or target.Type == SapGuiTypes.TAB:
                 target.Select()
-            else:
+            elif action == ActionTypes.PRESS_BUTTON:
                 target.Press()
-            logger.info(f"Interacted with button/tab: {target_id}")
+            else:
+                # Fallback for generic press if needed
+                if hasattr(target, "Press"):
+                    target.Press()
+                else:
+                    target.Select()
+                    
+            logger.info(f"Interacted with {target.Type}: {target_id}")
             
             return ActionResult(
                 success=True,
-                action_type=request.action_type,
+                action_type=action,
                 target_id=request.target_id,
-                message="Button pressed successfully"
+                message=f"Action {action} completed successfully"
             )
         except Exception as e:
-            logger.error(f"Failed to press button {target_id}: {str(e)}")
+            logger.error(f"Failed to interact with button {target_id}: {str(e)}")
             return ActionResult(
                 success=False,
-                action_type=request.action_type,
+                action_type=action,
                 target_id=request.target_id,
                 error=str(e)
             )
