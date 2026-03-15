@@ -17,7 +17,7 @@ class TableHandler(BaseControlHandler):
         metadata = {
             "row_count": int(getattr(control, "RowCount", 0)),
             "visible_row_count": int(getattr(control, "VisibleRowCount", 0)),
-            "columns": self._extract_columns(control)
+            "schema": self._extract_columns(control)
         }
         
         return Control(
@@ -30,7 +30,8 @@ class TableHandler(BaseControlHandler):
             visible=props["visible"],
             parent_id=props["parent_id"],
             actions=self.get_supported_actions(control),
-            confidence=1.0
+            confidence=1.0,
+            metadata=metadata
         )
 
     def _extract_columns(self, control: Any) -> List[Dict[str, str]]:
@@ -48,4 +49,9 @@ class TableHandler(BaseControlHandler):
         return columns
 
     def get_supported_actions(self, control: Any) -> List[str]:
-        return ["get_rows", "select_row", "scroll"]
+        return [
+            "read_table_rows", 
+            "table_select_row", 
+            "table_double_click_row", 
+            "set_cell_data"
+        ]

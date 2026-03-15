@@ -1,5 +1,15 @@
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict, Any
 from pydantic import BaseModel, Field
+
+class ActionDefinition(BaseModel):
+    """
+    Defines how to execute an action on a control via an MCP tool.
+    """
+    name: str = Field(..., description="Logical name of the action (e.g. 'set_value', 'select_row')")
+    tool: str = Field(..., description="The MCP tool name to use (e.g. 'sap_interact_field')")
+    action_type: str = Field(..., description="The value to pass for the 'action_type' parameter")
+    description: str = Field(..., description="Human-readable description of what this action does")
+    parameters: Dict[str, Any] = Field(default_factory=dict, description="Pre-filled or guided parameters for the tool call")
 
 class Control(BaseModel):
     """
@@ -16,5 +26,7 @@ class Control(BaseModel):
     required: bool = Field(False, description="Whether the control is a required field")
     parent_id: Optional[str] = Field(None, description="The ID of the parent container")
     bounds: Optional[Tuple[int, int, int, int]] = Field(None, description="Screen coordinates (x, y, width, height)")
-    actions: List[str] = Field(default_factory=list, description="Supported actions for this control")
+    actions: List[str] = Field(default_factory=list, description="Legacy list of action names")
+    supported_methods: List[ActionDefinition] = Field(default_factory=list, description="Structured mapping of actions to MCP tools")
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional context metadata")
     confidence: float = Field(1.0, description="Confidence score for the extraction of this control")

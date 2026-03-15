@@ -26,7 +26,23 @@ class McpServer:
             params = data.get("params", {})
 
             # MCP JSON-RPC Routing
-            if method == "tools/list":
+            if method == "initialize":
+                return self._make_response(msg_id, {
+                    "protocolVersion": "2024-11-05",
+                    "capabilities": {
+                        "tools": {},
+                        "resources": {}
+                    },
+                    "serverInfo": {
+                        "name": "sap-mcp",
+                        "version": "1.0.0"
+                    }
+                })
+
+            elif method == "ping":
+                return self._make_response(msg_id, {})
+
+            elif method == "tools/list":
                 tools = await self.adapter.list_tools()
                 return self._make_response(msg_id, {"tools": tools})
 

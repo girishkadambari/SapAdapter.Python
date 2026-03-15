@@ -9,19 +9,65 @@ from ..runtime.sap_runtime import SapRuntime
 from .wait_strategy import WaitStrategy
 from ..observation.screen_observation_builder import ScreenObservationBuilder
 
+from .action_registry import ActionRegistry
+from .handlers import ButtonHandler, FieldHandler, NavigationHandler, TableHandler, ShellHandler
+
 class ActionDispatcher:
     """
-    Central engine for executing SAP GUI actions reliably.
+    Central engine for routing SAP GUI actions reliably via defined handlers.
     """
     
     def __init__(self, runtime: SapRuntime):
         self.runtime = runtime
         self.wait_strategy = WaitStrategy(runtime)
         self.observation_builder = ScreenObservationBuilder(runtime)
+        
+        self.registry = ActionRegistry()
+        self._register_default_handlers()
+
+    def _register_default_handlers(self):
+        # Register Field actions
+        self.registry.register("set_field", FieldHandler)
+        self.registry.register("set_checkbox", FieldHandler)
+        self.registry.register("select_radio", FieldHandler)
+        self.registry.register("set_value", FieldHandler)
+        
+        # Register Button actions
+        self.registry.register("press_button", ButtonHandler)
+        self.registry.register("select_tab", ButtonHandler)
+        
+        # Register Navigation actions
+        self.registry.register("send_vkey", NavigationHandler)
+        self.registry.register("navigate_tcode", NavigationHandler)
+        
+        # Register Table/Grid actions
+        self.registry.register("set_cell_data", TableHandler)
+        self.registry.register("get_cell_data", TableHandler)
+        self.registry.register("activate_cell", TableHandler)
+        self.registry.register("select_row", TableHandler)
+        self.registry.register("find_row_by_text", TableHandler)
+        self.registry.register("extract_table_data", TableHandler)
+        self.registry.register("scroll_to_row", TableHandler)
+        
+        # Standardized Search Help / Table interaction aliases
+        self.registry.register("table_select_row", TableHandler)
+        self.registry.register("table_double_click_row", TableHandler)
+        self.registry.register("read_table_rows", TableHandler)
+        
+        # Register Shell/Tree/Toolbar actions
+        self.registry.register("select_node", ShellHandler)
+        self.registry.register("expand_node", ShellHandler)
+        self.registry.register("collapse_node", ShellHandler)
+        self.registry.register("double_click_node", ShellHandler)
+        self.registry.register("find_node_by_path", ShellHandler)
+        self.registry.register("press_toolbar_button", ShellHandler)
+        self.registry.register("press_context_button", ShellHandler)
+        self.registry.register("select_menu_item", ShellHandler)
+        self.registry.register("click_shell", ShellHandler)
 
     async def execute(self, request: ActionRequest) -> ActionResult:
         """
-        Executes a standardized ActionRequest.
+        Routes the ActionRequest to the correct handler and captures rich results.
         """
         logger.info(f"Executing action: {request.action_type} on {request.target_id}")
         session = self.runtime.get_session(request.session_id)
@@ -29,71 +75,70 @@ class ActionDispatcher:
         # 1. Ensure SAP is ready
         await self.runtime.ensure_ready(session)
         
-        initial_status = ""
+        # 2. Get Handler
         try:
-             initial_status = str(session.ActiveWindow.StatusBar.Text)
-        except:
-             pass
-
-        # 2. Find target and execute
-        try:
-            # Normalize target_id: remove leading slashes which can cause FindById failure
-            normalized_id = request.target_id
-            if normalized_id.startswith("/"):
-                normalized_id = normalized_id.lstrip("/")
-            
-            target = session.FindById(normalized_id)
-            
-            # Execute based on action type
-            if request.action_type == "set_text":
-                target.Text = request.params.get("value")
-            elif request.action_type == "press":
-                target.Press()
-            elif request.action_type == "select":
-                # Handles tabs, radio buttons, or menu items
-                if hasattr(target, "Select"):
-                    target.Select()
-                elif hasattr(target, "Selected"):
-                    target.Selected = True
-            elif request.action_type == "send_vkey":
-                # sendVKey works on window objects
-                vkey = int(request.params.get("vkey", 0))
-                session.ActiveWindow.sendVKey(vkey)
-            elif request.action_type == "set_value":
-                # For checkboxes or other value-based toggles
-                if hasattr(target, "Key"):
-                    target.Key = request.params.get("value")
-                else:
-                    target.Text = request.params.get("value")
-            else:
-                raise ValueError(f"Unsupported action type: {request.action_type}")
-                
-            # 3. Wait for post-action stability
-            await self.wait_strategy.wait_for_idle(session)
-            
-            # 4. Capture result
-            observation = await self.observation_builder.build(request.session_id)
-            
-            return ActionResult(
-                success=True,
-                action_type=request.action_type,
-                target_id=request.target_id,
-                observation=observation,
-                message=f"Action {request.action_type} executed successfully."
-            )
-
-        except Exception as e:
-            logger.error(f"Action execution failed: {str(e)}")
-            # Even on failure, try to capture state for debugging
-            try:
-                observation = await self.observation_builder.build(request.session_id)
-            except:
-                observation = None
-                
+            handler_cls = self.registry.get_handler_class(request.action_type)
+        except ValueError as e:
             return ActionResult(
                 success=False,
                 action_type=request.action_type,
                 target_id=request.target_id,
-                error=str(e),
-                observation=observation
+                error=str(e)
             )
+            
+        handler = handler_cls(self.runtime, self.wait_strategy, self.observation_builder)
+        
+        # 3. Execute via handler
+        try:
+            result = await handler.execute(session, request)
+        except Exception as e:
+            result = ActionResult(
+                success=False,
+                action_type=request.action_type,
+                target_id=request.target_id,
+                error=str(e)
+            )
+
+        # 4. Post-action verification and observation
+        await self.wait_strategy.wait_for_idle(session)
+        
+        try:
+            # For production: we use a light summary for periodic checks, 
+            # but for ACTION verification, we might want the status bar explicitly.
+            observation = await self.observation_builder.build(request.session_id, mode="SUMMARY")
+            result.observation = observation
+            
+            # Enrich AI-specific fields
+            if observation and observation.status_bar:
+                if observation.status_bar.type in ("W", "E", "A"):
+                    result.warnings.append(f"[{observation.status_bar.type}] {observation.status_bar.text}")
+                    if observation.status_bar.type in ("E", "A"):
+                        result.success = False
+                        result.error = observation.status_bar.text
+                
+                result.is_modal_active = bool(observation.modal)
+                
+            result.verification_outcome = "SUCCESS"
+        except Exception as e:
+            logger.error(f"Failed to capture post-action observation: {str(e)}")
+            result.verification_outcome = "UNVERIFIED"
+            
+        return result
+
+    async def execute_batch(self, session_id: str, requests: list[ActionRequest]) -> list[ActionResult]:
+        """
+        Executes a sequence of actions. Stops on the first critical error.
+        """
+        results = []
+        for i, req in enumerate(requests):
+            logger.info(f"Batch execution step {i+1}/{len(requests)}: {req.action_type}")
+            result = await self.execute(req)
+            results.append(result)
+            
+            if not result.success:
+                logger.warning(f"Batch execution halted at step {i+1} due to failure: {result.error}")
+                # Add step info to result for better agent debugging
+                result.message = f"Batch failed at step {i+1}: {result.message or ''}"
+                break
+                
+        return results

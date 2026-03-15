@@ -13,11 +13,13 @@ class StatusBar(BaseModel):
 
 class Modal(BaseModel):
     """
-    Represents an active modal dialog.
+    Represents an active modal dialog with structured details.
     """
     id: str = Field(..., description="SAP GUI ID of the modal window")
     title: str = Field(..., description="Title of the modal window")
     text: Optional[str] = Field(None, description="Content text of the modal if available")
+    category: str = Field("UNKNOWN", description="Category: SYSTEM, INSTRUCTIONAL, CONFIRMATION")
+    buttons: List[str] = Field(default_factory=list, description="Text/ID of available buttons in the modal")
 
 class ValidationSummary(BaseModel):
     """

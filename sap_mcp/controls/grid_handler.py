@@ -17,7 +17,7 @@ class GridHandler(BaseControlHandler):
         metadata = {
             "row_count": int(getattr(control, "RowCount", 0)),
             "column_count": int(getattr(control, "ColumnCount", 0)),
-            "columns": self._extract_columns(control)
+            "schema": self._extract_columns(control)
         }
         
         return Control(
@@ -30,18 +30,28 @@ class GridHandler(BaseControlHandler):
             visible=props["visible"],
             parent_id=props["parent_id"],
             actions=self.get_supported_actions(control),
-            confidence=1.0
+            confidence=1.0,
+            metadata=metadata
         )
 
-    def _extract_columns(self, control: Any) -> List[str]:
+    def _extract_columns(self, control: Any) -> List[Dict[str, str]]:
         columns = []
         try:
             col_names = control.ColumnOrder
             for i in range(col_names.Count):
-                columns.append(str(col_names.ElementAt(i)))
+                col_name = str(col_names.ElementAt(i))
+                columns.append({
+                    "name": col_name,
+                    "title": str(control.GetColumnTitle(col_name))
+                })
         except:
             pass
         return columns
 
     def get_supported_actions(self, control: Any) -> List[str]:
-        return ["get_rows", "find_row", "double_click", "select_row"]
+        return [
+            "read_table_rows", 
+            "table_select_row", 
+            "table_double_click_row", 
+            "set_cell_data"
+        ]

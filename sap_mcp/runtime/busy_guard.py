@@ -12,13 +12,14 @@ class BusyGuard:
         self.timeout_sec = timeout_ms / 1000.0
         self.poll_interval_sec = poll_interval_ms / 1000.0
 
-    async def wait_for_idle(self, session: Any):
+    async def wait_for_idle(self, session: Any, timeout: float = None):
         """
         Polls until the session is not busy.
         """
         start_time = time.time()
+        timeout_sec = timeout if timeout is not None else self.timeout_sec
         
-        while (time.time() - start_time) < self.timeout_sec:
+        while (time.time() - start_time) < timeout_sec:
             try:
                 if not session.Busy:
                     # Double check status bar for "Please wait" or "System busy"
