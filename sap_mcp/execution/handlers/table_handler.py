@@ -19,7 +19,8 @@ class TableHandler(ActionHandler):
             ctype = str(target.Type)
             
             # Robust column/row parameter parsing
-            row = int(params.get("row", 0))
+            row_raw = params.get("row")
+            row = int(row_raw) if row_raw is not None else 0
             col = self._parse_column(params.get("column"))
             val = params.get("value")
 
@@ -100,11 +101,13 @@ class TableHandler(ActionHandler):
         rows_data = params.get("rows", [])
         results = []
         for row_item in rows_data:
-            r = int(row_item.get("row", 0))
+            r_raw = row_item.get("row")
+            r = int(r_raw) if r_raw is not None else 0
             data = row_item.get("data", {})
             self._scroll_to(target, ctype, r)
-            for c_name, val in data.items():
-                self._set_cell(target, ctype, r, c_name, val)
+            for c_identifier, val in data.items():
+                resolved_col = self._resolve_column(target, ctype, c_identifier)
+                self._set_cell(target, ctype, r, resolved_col, val)
             results.append({"row": r, "status": "SET"})
         
         return ActionResult(
@@ -146,17 +149,21 @@ class TableHandler(ActionHandler):
             target.SelectedRows = str(row)
 
     def _set_cell(self, target: Any, ctype: str, row: int, col: Any, val: Any):
+        resolved_col = self._resolve_column(target, ctype, col)
         if ctype == SapGuiTypes.TABLE_CONTROL:
-            target.GetCell(row, col).Text = str(val)
+            target.GetCell(row, resolved_col).Text = str(val)
         else:
-            target.ModifyCell(row, col, str(val))
+            target.ModifyCell(row, resolved_col, str(val))
 
     def _get_cell(self, target: Any, ctype: str, row: int, col: Any) -> str:
         try:
+            resolved_col = self._resolve_column(target, ctype, col)
             if ctype == SapGuiTypes.TABLE_CONTROL:
-                return str(target.GetCell(row, col).Text)
-            return str(target.GetCellValue(row, col))
-        except: return ""
+                return str(target.GetCell(row, resolved_col).Text)
+            return str(target.GetCellValue(row, resolved_col))
+        except Exception as e:
+            logger.debug(f"Failed to get cell ({row}, {col}): {e}")
+            return ""
 
     def _double_click_row(self, target: Any, ctype: str, row: int, col: Any):
         if ctype == SapGuiTypes.TABLE_CONTROL:
@@ -191,11 +198,66 @@ class TableHandler(ActionHandler):
         return schema
 
     def _find_row(self, target: Any, ctype: str, col: Any, text: str) -> int:
+        resolved_col = self._resolve_column(target, ctype, col)
         count = min(int(getattr(target, "RowCount", 0)), 100)
         for i in range(count):
-            if self._get_cell(target, ctype, i, col).strip() == str(text).strip():
+            if self._get_cell(target, ctype, i, resolved_col).strip() == str(text).strip():
                 return i
         return -1
+
+    def _resolve_column(self, target: Any, ctype: str, column_identifier: Any) -> Any:
+        """
+        Resolves a column name, suffix, title, or index to the correct identifier.
+        """
+        if column_identifier is None:
+            return 0
+        
+        # If it's already an index, return it
+        try:
+            return int(column_identifier)
+        except (ValueError, TypeError):
+            pass
+
+        col_str = str(column_identifier).strip()
+        
+        if ctype == SapGuiTypes.TABLE_CONTROL:
+            cols = target.Columns
+            # 1. Exact Match
+            for i in range(cols.Count):
+                if str(cols.ElementAt(i).Name) == col_str:
+                    return i
+            # 2. Suffix Match (e.g., 'TXZ01' matches 'MEPO1211-TXZ01')
+            for i in range(cols.Count):
+                if str(cols.ElementAt(i).Name).endswith(col_str):
+                    return i
+            # 3. Title Match
+            for i in range(cols.Count):
+                if str(cols.ElementAt(i).Title).lower() == col_str.lower():
+                    return i
+        
+        elif ctype == SapGuiTypes.GRID_VIEW or "GridView" in str(getattr(target, "SubType", "")):
+            # ALV Grid logic
+            try:
+                col_names = target.ColumnOrder
+                # 1. Exact Match
+                for i in range(col_names.Count):
+                    name = str(col_names.ElementAt(i))
+                    if name == col_str:
+                        return name
+                # 2. Suffix Match
+                for i in range(col_names.Count):
+                    name = str(col_names.ElementAt(i))
+                    if name.endswith(col_str):
+                        return name
+                # 3. Title Match
+                for i in range(col_names.Count):
+                    name = str(col_names.ElementAt(i))
+                    if str(target.GetColumnTitle(name)).lower() == col_str.lower():
+                        return name
+            except Exception as e:
+                logger.debug(f"GridView column resolution failed: {e}")
+
+        return column_identifier
 
     def _extract_data(self, target: Any, ctype: str, start_row: int, count: int) -> List[Dict]:
         rows = []

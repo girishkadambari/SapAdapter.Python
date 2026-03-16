@@ -1,5 +1,4 @@
 from typing import Any, Optional, Dict, List
-from datetime import datetime, timezone
 from loguru import logger
 
 from ..schemas.observation import ScreenObservation, StatusBar, Modal, ValidationSummary
@@ -9,12 +8,12 @@ from .extractors.registry import ExtractorRegistry
 from .enricher import ControlEnricher
 from ..snapshot.screenshot_service import ScreenshotService
 from ..classification.screen_classifier import ScreenClassifier
-from ..core.config import ControlSubtypes
+from .tree_processor import TreeProcessor
 
 class ScreenObservationBuilder:
     """
     Coordinates the capture of a full ScreenObservation.
-    Refactored to orchestrate Extractors and Enrichers following Phase 2 LLD.
+    Orchestrates identification, extraction, enrichment, and classification.
     """
     
     def __init__(self, runtime: SapRuntime):
@@ -24,6 +23,7 @@ class ScreenObservationBuilder:
         self.enricher = ControlEnricher()
         self.screenshot_service = ScreenshotService()
         self.classifier = ScreenClassifier()
+        self.tree_processor = TreeProcessor()
 
     async def build(
         self, 
@@ -34,7 +34,6 @@ class ScreenObservationBuilder:
     ) -> ScreenObservation:
         """
         Main entry point to capture the current state.
-        Orchestrates identification, extraction, enrichment, and classification.
         """
         session = self.runtime.get_session(session_id)
         win = session.ActiveWindow
@@ -44,32 +43,24 @@ class ScreenObservationBuilder:
         modal_model = self.runtime.modal_guard.detect(session)
         
         # 2. Control Collection
-        controls = []
-        if mode == "FOCUSED" and target_id:
-            try:
-                control_obj = session.FindById(target_id)
-                controls = self._process_controls([control_obj])
-            except Exception as e:
-                logger.warning(f"Focused extraction failed for {target_id}: {str(e)}")
-        else:
-            # Capture hierarchy
-            raw_com_objects = self._get_com_objects(session)
-            controls = self._process_controls(raw_com_objects)
+        controls = await self._collect_controls(session, mode, target_id)
 
-            # Mode-based filtering
-            if mode == "SUMMARY":
-                # Filter to only relevant interactive controls
-                controls = [
-                    c for c in controls 
-                    if c.visible and (c.editable or c.subtype in ("button", "tab", "combobox", "statusbar"))
-                ]
+        # 3. Enrichment (Adds actions, supported methods)
+        controls = [self.enricher.enrich(c) for c in controls]
 
-        # 3. Classification & Metadata
+        # 4. Mode-based filtering
+        if mode == "SUMMARY":
+            controls = [
+                c for c in controls 
+                if c.visible and (c.editable or c.subtype in ("button", "tab", "combobox", "statusbar"))
+            ]
+
+        # 5. Classification & Metadata
         title = str(win.Text) if win else "SAP"
         screen_type = self.classifier.classify(controls, title)
         metadata = self.classifier.get_metadata(controls, screen_type)
 
-        # 4. Screenshot
+        # 6. Screenshot
         screenshot_data = None
         if include_screenshot:
             screenshot_data = self._capture_screenshot(win)
@@ -90,69 +81,19 @@ class ScreenObservationBuilder:
             validation_summary=ValidationSummary(is_valid=True)
         )
 
-    def _process_controls(self, com_objects: List[Any]) -> List[Any]:
+    async def _collect_controls(self, session: Any, mode: str, target_id: Optional[str]) -> List[Any]:
         """
-        Pipelines COM objects through Extraction and Enrichment.
+        Collects controls using the optimized GetObjectTree batch API.
         """
-        processed = []
-        for obj in com_objects:
-            extractor = self.extractor_registry.get_extractor(obj)
-            if extractor:
-                control = extractor.extract(obj)
-                control = self.enricher.enrich(control)
-                processed.append(control)
-        return processed
+        if mode == "FOCUSED" and target_id:
+            logger.warning("FOCUSED mode is deprecated and uses GetObjectTree for full capture instead.")
 
-    def _get_com_objects(self, session: Any) -> List[Any]:
-        """
-        Retrieves raw COM objects from the session.
-        Uses RawSnapshotBuilder but returns objects instead of dicts.
-        """
-        # Note: We need to modify RawSnapshotBuilder to return COM objects 
-        # or handle the logic here directly. For now, we'll use a simplified recursive scan.
-        objects = []
-        
-        def scan(component):
-            objects.append(component)
-            if hasattr(component, "Children"):
-                children = component.Children
-                if children is not None:
-                    for i in range(children.Count):
-                        scan(children(i))
-                    
-        scan(session)
-        return objects
-
-    async def build_context(self, session_id: Optional[str] = None) -> Dict[str, Any]:
-        """
-        Retrieves high-level context of current session.
-        Used by get_sap_context tool.
-        """
-        session = self.runtime.get_session(session_id)
-        return {
-            "session_id": str(session_id or self.runtime.session_manager.active_session_id),
-            "transaction": str(session.Info.Transaction),
-            "title": str(session.ActiveWindow.Text),
-            "program": str(session.Info.Program),
-            "screen_number": str(session.Info.ScreenNumber),
-            "user": str(session.Info.User),
-            "client": str(session.Info.Client)
-        }
-
-    async def build_verification(self, session_id: Optional[str] = None) -> Dict[str, Any]:
-        """
-        Retrieves status and error information for verification.
-        Used by get_status_and_incompletion tool.
-        """
-        session = self.runtime.get_session(session_id)
-        sb = self._capture_status_bar(session)
-        
-        return {
-            "status": sb.model_dump(),
-            "is_error": sb.type in ("E", "A"),
-            "transaction": str(session.Info.Transaction),
-            "screen": str(session.Info.ScreenNumber)
-        }
+        try:
+            raw_snapshot = self.raw_builder.get_raw_snapshot(session)
+            return self.tree_processor.process_json_tree(raw_snapshot["optimized_tree"])
+        except Exception as e:
+            logger.error(f"Extraction failed: {str(e)}")
+            return []
 
     def _capture_status_bar(self, session: Any) -> StatusBar:
         try:
