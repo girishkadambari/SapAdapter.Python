@@ -45,6 +45,13 @@ class ShellHandler(ActionHandler):
         elif action == ActionTypes.EXPAND_NODE: target.ExpandNode(node_key)
         elif action == ActionTypes.COLLAPSE_NODE: target.CollapseNode(node_key)
         elif action == ActionTypes.DOUBLE_CLICK_NODE: target.DoubleClickNode(node_key)
+        elif action == ActionTypes.NODE_CONTEXT_MENU: target.NodeContextMenu(node_key)
+        elif action == ActionTypes.SELECT_ITEM:
+            item_name = params.get("item_name", "")
+            target.SelectItem(node_key, item_name)
+        elif action == ActionTypes.PRESS_CONTEXT_BUTTON:
+            btn_id = params.get("button_id")
+            target.PressContextButton(node_key, btn_id)
         else: raise ValueError(f"Unknown tree action: {action}")
         
         return ActionResult(success=True, action_type=action, target_id=target.Id, message=f"Tree: {action} on {node_key}")

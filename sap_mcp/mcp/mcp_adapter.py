@@ -11,8 +11,10 @@ from .tools.registry import ToolRegistry
 from .tools.session_tools import SapListSessionsTool
 from .tools.screen_tools import SapGetScreenSummaryTool, SapInspectControlTool, SapCaptureVisualTool, SapObserveScreenTool
 from .tools.action_tools import SapNavigateTool, SapInteractTool, SapTableActionTool
+from .tools.shell_tools import SapShellActionTool
 from .tools.batch_tools import SapExecuteBatchTool
 from .tools.context_tools import SapGetSapContextTool, SapGetStatusAndIncompletionTool, SapSearchHelpSelectTool
+from .tools.tree_tools import SapListTreeNodesTool
 
 class McpAdapter:
     """
@@ -44,6 +46,7 @@ class McpAdapter:
         self.registry.register(SapNavigateTool(self.action_dispatcher))
         self.registry.register(SapInteractTool(self.action_dispatcher))
         self.registry.register(SapTableActionTool(self.action_dispatcher))
+        self.registry.register(SapShellActionTool(self.action_dispatcher))
         
         # Batch Tools
         self.registry.register(SapExecuteBatchTool(self.action_dispatcher))
@@ -52,6 +55,7 @@ class McpAdapter:
         self.registry.register(SapGetSapContextTool(self.observation_builder))
         self.registry.register(SapGetStatusAndIncompletionTool(self.observation_builder))
         self.registry.register(SapSearchHelpSelectTool(self.action_dispatcher))
+        self.registry.register(SapListTreeNodesTool(self.runtime))
 
     async def list_tools(self) -> List[Dict[str, Any]]:
         """

@@ -1,3 +1,4 @@
+import json
 from typing import Any, Dict
 from .base_tool import BaseMcpTool
 from ...observation.screen_observation_builder import ScreenObservationBuilder
@@ -28,7 +29,7 @@ class SapGetSapContextTool(BaseMcpTool):
     async def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         try:
             context = await self.observation_builder.build_context(arguments.get("session_id"))
-            return self._success_response(str(context))
+            return self._success_response(json.dumps(context))
         except Exception as e:
             return self._error_response(str(e))
 
@@ -55,7 +56,7 @@ class SapGetStatusAndIncompletionTool(BaseMcpTool):
     async def execute(self, arguments: Dict[str, Any]) -> Dict[str, Any]:
         try:
             verification = await self.observation_builder.build_verification(arguments.get("session_id"))
-            return self._success_response(str(verification))
+            return self._success_response(json.dumps(verification))
         except Exception as e:
             return self._error_response(str(e))
 

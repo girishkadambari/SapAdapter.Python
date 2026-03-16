@@ -82,6 +82,8 @@ class ActionTypes:
     EXPAND_NODE = "expand_node"
     COLLAPSE_NODE = "collapse_node"
     DOUBLE_CLICK_NODE = "double_click_node"
+    NODE_CONTEXT_MENU = "node_context_menu"
+    SELECT_ITEM = "select_item"
     FIND_NODE_BY_PATH = "find_node_by_path"
     PRESS_CONTEXT_BUTTON = "press_context_button"
     SELECT_MENU_ITEM = "select_menu_item"

@@ -9,7 +9,15 @@ class TreeExtractor(BaseControlExtractor):
     """
     
     def identify(self, control: Any) -> bool:
-        return str(control.Type) == SapGuiTypes.TREE
+        ctype = str(control.Type)
+        if ctype == SapGuiTypes.TREE:
+            return True
+        if ctype == SapGuiTypes.SHELL:
+            try:
+                return str(control.SubType) == "Tree"
+            except:
+                return False
+        return False
 
     def extract(self, control: Any) -> Control:
         props = self.get_basic_props(control)

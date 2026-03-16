@@ -123,6 +123,37 @@ class ScreenObservationBuilder:
         scan(session)
         return objects
 
+    async def build_context(self, session_id: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Retrieves high-level context of current session.
+        Used by get_sap_context tool.
+        """
+        session = self.runtime.get_session(session_id)
+        return {
+            "session_id": str(session_id or self.runtime.session_manager.active_session_id),
+            "transaction": str(session.Info.Transaction),
+            "title": str(session.ActiveWindow.Text),
+            "program": str(session.Info.Program),
+            "screen_number": str(session.Info.ScreenNumber),
+            "user": str(session.Info.User),
+            "client": str(session.Info.Client)
+        }
+
+    async def build_verification(self, session_id: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Retrieves status and error information for verification.
+        Used by get_status_and_incompletion tool.
+        """
+        session = self.runtime.get_session(session_id)
+        sb = self._capture_status_bar(session)
+        
+        return {
+            "status": sb.model_dump(),
+            "is_error": sb.type in ("E", "A"),
+            "transaction": str(session.Info.Transaction),
+            "screen": str(session.Info.ScreenNumber)
+        }
+
     def _capture_status_bar(self, session: Any) -> StatusBar:
         try:
             sb = session.ActiveWindow.StatusBar

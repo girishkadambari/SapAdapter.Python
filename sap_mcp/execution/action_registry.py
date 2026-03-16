@@ -32,7 +32,17 @@ class ActionRegistry:
             ActionTypes.SELECT_ROW: TableHandler,
             ActionTypes.FIND_ROW_BY_TEXT: TableHandler,
             ActionTypes.TABLE_BATCH_FILL: TableHandler,
-            ActionTypes.CLICK: ShellHandler
+            ActionTypes.CLICK: ShellHandler,
+            ActionTypes.SELECT_NODE: ShellHandler,
+            ActionTypes.EXPAND_NODE: ShellHandler,
+            ActionTypes.COLLAPSE_NODE: ShellHandler,
+            ActionTypes.DOUBLE_CLICK_NODE: ShellHandler,
+            ActionTypes.NODE_CONTEXT_MENU: ShellHandler,
+            ActionTypes.SELECT_ITEM: ShellHandler,
+            ActionTypes.FIND_NODE_BY_PATH: ShellHandler,
+            ActionTypes.PRESS_CONTEXT_BUTTON: ShellHandler,
+            ActionTypes.SELECT_MENU_ITEM: ShellHandler,
+            ActionTypes.ACTIVATE_CELL: ShellHandler
         }
         for action_type, handler_cls in defaults.items():
             self.register(action_type, handler_cls)
