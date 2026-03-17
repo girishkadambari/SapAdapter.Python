@@ -10,21 +10,44 @@ class TreeProcessor:
 
     def process_json_tree(self, tree: Dict[str, Any]) -> List[Control]:
         """
-        Processes the optimized JSON tree into a flat list of Control models.
+        Processes the optimized JSON tree into a hierarchical list of Control models.
+        """
+        # GetObjectTree usually returns a single root node dictionary.
+        # We start recursion from there.
+        root_controls = self._map_recursive(tree)
+        return root_controls
+
+    def _map_recursive(self, node: Dict[str, Any], parent_id: Optional[str] = None) -> List[Control]:
+        """
+        Recursively processes a node and its children.
         """
         controls = []
+        props = node.get("properties", {})
         
-        def flatten(node):
-            props = node.get("properties", {})
-            if props:
-                control = self.map_node_to_control(props)
-                if control:
-                    controls.append(control)
+        # Determine current node's control model
+        control = None
+        current_id = parent_id
+        if props:
+            control = self.map_node_to_control(props)
+            if control:
+                control.parent_id = parent_id
+                current_id = control.id
+                controls.append(control)
+        
+        # Recursively process children
+        children_nodes = node.get("children", [])
+        child_controls = []
+        for child_node in children_nodes:
+            child_controls.extend(self._map_recursive(child_node, current_id))
             
-            for child in node.get("children", []):
-                flatten(child)
-        
-        flatten(tree)
+        # Attach children to the parent control if it exists
+        if control:
+            control.children = child_controls
+        else:
+            # If the current node didn't map to a control but has children,
+            # elevate the children to the current level.
+            controls.extend(child_controls)
+            
         return controls
 
     def map_node_to_control(self, props: Dict[str, Any]) -> Optional[Control]:
@@ -37,7 +60,7 @@ class TreeProcessor:
         if not sap_id or not sap_type:
             return None
 
-        subtype = self._determine_subtype(sap_id, sap_type)
+        subtype = self._determine_subtype(sap_id, sap_type, props)
         
         # Normalize ID
         norm_id = sap_id
@@ -62,7 +85,7 @@ class TreeProcessor:
             confidence=1.0
         )
 
-    def _determine_subtype(self, sap_id: str, sap_type: str) -> str:
+    def _determine_subtype(self, sap_id: str, sap_type: str, props: Dict[str, Any] = {}) -> str:
         if sap_type in (SapGuiTypes.BUTTON, "GuiButton"): return ControlSubtypes.BUTTON
         if sap_type in (SapGuiTypes.TEXT_FIELD, SapGuiTypes.C_TEXT_FIELD, "GuiTextField", "GuiCTextField"): return ControlSubtypes.TEXT
         if sap_type in (SapGuiTypes.CHECKBOX, "GuiCheckBox"): return ControlSubtypes.CHECKBOX
@@ -70,11 +93,18 @@ class TreeProcessor:
         if sap_type in (SapGuiTypes.COMBOBOX, "GuiComboBox"): return ControlSubtypes.COMBOBOX
         if sap_type in (SapGuiTypes.TAB, "GuiTab"): return ControlSubtypes.TAB
         if sap_id.endswith("StatusBar"): return "statusbar"
-        if sap_type in ("GuiShell"): return "shell"
-        if sap_type == "GuiLabel": return "label"
-        if sap_type == "GuiStatusbar": return "statusbar"
-        if sap_type == "GuiToolbar": return "toolbar"
-        return "unknown"
+        if sap_type in ("GuiShell"):
+            shell_subtype = props.get("SubType", "")
+            label = (props.get("Text") or props.get("Tooltip") or "").lower()
+            if "GridView" in shell_subtype or "gridview" in label or "grid" in label: return ControlSubtypes.GRID
+            if "Tree" in shell_subtype or "tree" in label: return ControlSubtypes.TREE
+            return "shell"
+        if sap_type in (SapGuiTypes.LABEL, "GuiLabel"): return ControlSubtypes.LABEL
+        if sap_type in (SapGuiTypes.STATUSBAR, "GuiStatusbar"): return ControlSubtypes.STATUSBAR
+        if sap_type in (SapGuiTypes.TOOLBAR, "GuiToolbar"): return "toolbar"
+        if sap_type in (SapGuiTypes.MENU, "GuiMenu"): return ControlSubtypes.MENU
+        
+        return ControlSubtypes.UNKNOWN
 
     def _parse_bounds(self, props: Dict[str, Any]) -> Optional[tuple]:
         if all(k in props for k in ["Left", "Top", "Width", "Height"]):

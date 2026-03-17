@@ -45,20 +45,20 @@ class ScreenObservationBuilder:
         # 2. Control Collection
         controls = await self._collect_controls(session, mode, target_id)
 
-        # 3. Enrichment (Adds actions, supported methods)
-        controls = [self.enricher.enrich(c) for c in controls]
+        # 3. Enrichment (Adds actions, supported methods - recursively)
+        controls = self._enrich_recursive(controls)
+
+        # Helper to flatten for classification
+        flat_controls = self._flatten_controls(controls)
 
         # 4. Mode-based filtering
         if mode == "SUMMARY":
-            controls = [
-                c for c in controls 
-                if c.visible and (c.editable or c.subtype in ("button", "tab", "combobox", "statusbar"))
-            ]
+            controls = self._filter_summary_recursive(controls)
 
         # 5. Classification & Metadata
         title = str(win.Text) if win else "SAP"
-        screen_type = self.classifier.classify(controls, title)
-        metadata = self.classifier.get_metadata(controls, screen_type)
+        screen_type = self.classifier.classify(flat_controls, title)
+        metadata = self.classifier.get_metadata(flat_controls, screen_type)
 
         # 6. Screenshot
         screenshot_data = None
@@ -116,3 +116,38 @@ class ScreenObservationBuilder:
         except Exception as e:
             logger.warning(f"Screenshot failed: {e}")
         return None
+
+    def _enrich_recursive(self, controls: List[Any]) -> List[Any]:
+        enriched = []
+        for c in controls:
+            ec = self.enricher.enrich(c)
+            ec.children = self._enrich_recursive(getattr(ec, "children", []))
+            enriched.append(ec)
+        return enriched
+
+    def _flatten_controls(self, controls: List[Any]) -> List[Any]:
+        flat = []
+        for c in controls:
+            flat.append(c)
+            flat.extend(self._flatten_controls(getattr(c, "children", [])))
+        return flat
+
+    def _filter_summary_recursive(self, controls: List[Any]) -> List[Any]:
+        filtered = []
+        for c in controls:
+            # Recursively filter children
+            filtered_children = self._filter_summary_recursive(getattr(c, "children", []))
+            c.children = filtered_children
+            
+            # Retention criteria:
+            # 1. High-value leaf node
+            is_high_value_leaf = c.visible and (c.editable or c.subtype in ("button", "tab", "combobox", "statusbar"))
+            # 2. Vital container
+            is_vital_container = c.subtype in ("shell", "table") or c.type in ("GuiTableControl", "GuiShell", "GuiCustomControl", "GuiContainerShell", "GuiSplitterContainer", "GuiTabStrip", "GuiTab")
+            # 3. Has retained children
+            has_children = len(filtered_children) > 0
+            
+            if is_high_value_leaf or is_vital_container or has_children:
+                filtered.append(c)
+                
+        return filtered

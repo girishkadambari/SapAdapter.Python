@@ -79,7 +79,27 @@ class ControlEnricher:
                 description="Fills multiple rows efficiently"
             ))
             
-        elif subtype in (ControlSubtypes.GRID, ControlSubtypes.TREE):
+        elif subtype == ControlSubtypes.GRID:
+            methods.append(ActionDefinition(
+                name="get_cell",
+                tool="sap_table_action",
+                action_type=ActionTypes.GET_CELL_DATA,
+                description="Reads data from a cell"
+            ))
+            methods.append(ActionDefinition(
+                name="select_row",
+                tool="sap_table_action",
+                action_type=ActionTypes.SELECT_ROW,
+                description="Selects a logical row"
+            ))
+            methods.append(ActionDefinition(
+                name="activate_cell",
+                tool="sap_table_action",
+                action_type=ActionTypes.ACTIVATE_CELL,
+                description="Double-clicks a cell (navigation)"
+            ))
+            
+        elif subtype == ControlSubtypes.TREE:
             methods.append(ActionDefinition(
                 name="click",
                 tool="sap_shell_action",
@@ -93,6 +113,14 @@ class ControlEnricher:
                 tool="sap_interact_field",
                 action_type=ActionTypes.SELECT_TAB,
                 description="Selects the tab"
+            ))
+            
+        elif subtype == ControlSubtypes.MENU:
+            methods.append(ActionDefinition(
+                name="select",
+                tool="sap_interact_field",
+                action_type=ActionTypes.PRESS_BUTTON,
+                description="Selects the menu item"
             ))
             
         return methods

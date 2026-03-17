@@ -26,6 +26,7 @@ class Control(BaseModel):
     required: bool = Field(False, description="Whether the control is a required field")
     parent_id: Optional[str] = Field(None, description="The ID of the parent container")
     bounds: Optional[Tuple[int, int, int, int]] = Field(None, description="Screen coordinates (x, y, width, height)")
+    children: List[Any] = Field(default_factory=list, description="Child controls if this is a container")
     actions: List[str] = Field(default_factory=list, description="Legacy list of action names")
     supported_methods: List[ActionDefinition] = Field(default_factory=list, description="Structured mapping of actions to MCP tools")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional context metadata")

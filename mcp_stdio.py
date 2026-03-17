@@ -1,15 +1,15 @@
 import sys
 import json
-# Minor change to trigger server reload
 import asyncio
 from loguru import logger
+
+# Suppress loguru output to stdout immediately to avoid interfering with MCP JSON-RPC
+logger.remove()
+logger.add(sys.stderr, level="INFO")
+
 from sap_mcp.runtime.sap_runtime import SapRuntime
 from sap_mcp.mcp.mcp_adapter import McpAdapter
 from sap_mcp.mcp.mcp_server import McpServer
-
-# Suppress loguru output to stdout to avoid interfering with MCP JSON-RPC
-logger.remove()
-logger.add(sys.stderr, level="INFO")
 
 async def stdio_server():
     """

@@ -19,7 +19,7 @@ class RawSnapshotBuilder:
     def _capture_optimized(self, session: Any) -> Dict[str, Any]:
         """Uses GetObjectTree to fetch the UI hierarchy in a single batch call."""
         # Request common properties for all elements
-        props = ["Id", "Type", "Text", "Tooltip", "Visible", "Changeable", "Left", "Top", "Width", "Height"]
+        props = ["Id", "Type", "Text", "Tooltip", "Visible", "Changeable", "Left", "Top", "Width", "Height", "SubType"]
         
         try:
             # GetObjectTree returns a JSON string

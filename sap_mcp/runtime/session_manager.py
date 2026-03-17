@@ -28,8 +28,10 @@ class SessionManager:
             
             children = application.Children
             if children is None:
+                logger.debug("SessionManager: children is None")
                 return []
                 
+            logger.debug(f"SessionManager: children count {children.Count}")
             for i in range(children.Count):
                 connection = children(i)
                 
@@ -66,11 +68,11 @@ class SessionManager:
                         sessions.append(session_data)
                         self._sessions[session_id] = session_data
                 except Exception as e:
-                    logger.warning(f"Failed to enumerate sessions for connection {i}: {str(e)}")
+                    logger.exception(f"Failed to enumerate sessions for connection {i}")
                     
             return sessions
         except Exception as e:
-            logger.error(f"Failed to list SAP sessions: {str(e)}")
+            logger.exception("Failed to list SAP sessions")
             return []
 
     def get_session_indices(self, session_id: str) -> Optional[tuple]:

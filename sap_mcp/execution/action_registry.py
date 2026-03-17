@@ -42,7 +42,8 @@ class ActionRegistry:
             ActionTypes.FIND_NODE_BY_PATH: ShellHandler,
             ActionTypes.PRESS_CONTEXT_BUTTON: ShellHandler,
             ActionTypes.SELECT_MENU_ITEM: ShellHandler,
-            ActionTypes.ACTIVATE_CELL: ShellHandler
+            ActionTypes.ACTIVATE_CELL: ShellHandler,
+            ActionTypes.SEARCH_HELP_SELECT: SearchHelpHandler
         }
         for action_type, handler_cls in defaults.items():
             self.register(action_type, handler_cls)

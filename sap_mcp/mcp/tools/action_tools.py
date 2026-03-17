@@ -67,7 +67,7 @@ class SapInteractTool(BaseMcpTool):
             "properties": {
                 "session_id": { "type": "string" },
                 "target_id": { "type": "string", "description": "The absolute SAP ID." },
-                "action_type": { "type": "string", "enum": ["set_field", "set_checkbox", "select_tab"] },
+                "action_type": { "type": "string", "enum": ["set_field", "set_checkbox", "select_tab", "press_button"] },
                 "value": { "type": "string", "description": "The input text, boolean checkbox state, or dropdown key." }
             },
             "required": ["session_id", "target_id", "action_type"]

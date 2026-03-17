@@ -56,11 +56,12 @@ class TableHandler(ActionHandler):
     def _handle_get_cell(self, target, ctype, row, col, action) -> ActionResult:
         self._scroll_to(target, ctype, row)
         val = self._get_cell(target, ctype, row, col)
+        resolved_col = self._resolve_column(target, ctype, col)
         return ActionResult(
             success=True, 
             action_type=action, 
             target_id=target.Id, 
-            message=f"Retrieved: {val}", 
+            message=f"Retrieved from '{resolved_col}': {val}", 
             completed_action_details={"value": val}
         )
 
@@ -239,6 +240,16 @@ class TableHandler(ActionHandler):
             # ALV Grid logic
             try:
                 col_names = target.ColumnOrder
+                
+                # Check if column_identifier is a numeric index within bounds
+                try:
+                    idx = int(column_identifier)
+                    if 0 <= idx < col_names.Count:
+                        return str(col_names.ElementAt(idx))
+                except (ValueError, TypeError):
+                    pass
+
+                col_str = str(column_identifier).strip()
                 # 1. Exact Match
                 for i in range(col_names.Count):
                     name = str(col_names.ElementAt(i))
