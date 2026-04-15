@@ -94,8 +94,8 @@ async def monitor_screen():
                     })
                     last_tx = current_tx
                     last_title = current_title
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Monitor screen check failed (likely no active session): {str(e)}")
             
         await asyncio.sleep(2)
 
@@ -119,7 +119,8 @@ async def main():
     
     # Initialize Transport
     port = int(os.getenv("PORT", 8787))
-    server_instance = WebSocketServer("0.0.0.0", port, router)
+    host = os.getenv("HOST", "127.0.0.1")
+    server_instance = WebSocketServer(host, port, router)
     server_instance.mcp_server = mcp_server
     
     # Start Screen Monitor

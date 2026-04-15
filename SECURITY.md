@@ -11,7 +11,7 @@
 
 We take the security of this project seriously. If you believe you have found a security vulnerability, please do NOT open a public issue. Instead, please report it privately.
 
-**Email**: [your-email@example.com] (Please update with real contact)
+**Email**: security@yourdomain.com (Please replace with your actual security contact email)
 
 ### Our Process
 1. We will acknowledge receipt within 48 hours.

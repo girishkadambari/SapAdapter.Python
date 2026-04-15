@@ -79,6 +79,15 @@ The adapter exposes several tools to AI agents:
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
+## ⚠️ Responsible Usage & Safety
+
+Automating SAP GUI actions carries inherent risks. Please observe the following guardrails:
+
+- **Non-Production First**: Always develop and test your agentic workflows in a **Sandbox** or **Development** environment. Never point an autonomous agent at a Production system without extreme caution and human-in-the-loop validation.
+- **Destructive Actions**: The adapter can execute any action the logged-in user has permission for. Ensure your agent is aware of the consequences of pressing buttons like "Save", "Delete", or "Post".
+- **Read-Only Mode**: For data extraction tasks, consider using a SAP user with read-only permissions to mitigate risk.
+- **Session Awareness**: The adapter interacts with the *active* session. Be mindful of multi-session environments to avoid unintended actions in the wrong window.
+
 ## 📄 License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
