@@ -55,6 +55,39 @@ python mcp_stdio.py
 python main.py
 ```
 
+## 🖥 Client Configuration
+
+Add the SAP MCP Adapter to your favorite client using the configurations below.
+
+### Claude Desktop
+Add this to your `claude_desktop_config.json`:
+```json
+"sap-adapter": {
+  "command": "python",
+  "args": ["C:\\path\\to\\SapAdapter.Python\\mcp_stdio.py"],
+  "env": { "PYTHONPATH": "C:\\path\\to\\SapAdapter.Python" }
+}
+```
+
+### Cursor IDE
+1. Go to **Settings** -> **General** -> **MCP**.
+2. Add a new server:
+   - **Type**: `command`
+   - **Command**: `python C:\path\to\SapAdapter.Python\mcp_stdio.py`
+
+### Antigravity
+Add to your settings:
+```json
+{
+  "name": "SAP MCP",
+  "transport": "stdio",
+  "command": "python",
+  "args": ["C:\\path\\to\\SapAdapter.Python\\mcp_stdio.py"]
+}
+```
+
+*For more details, see the [MCP Configuration Guide](docs/mcp-configuration.md).*
+
 ## 🛠 MCP Tools
 
 The adapter exposes several tools to AI agents:
