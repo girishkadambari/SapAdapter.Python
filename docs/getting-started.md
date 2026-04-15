@@ -18,7 +18,7 @@ The SAP MCP Adapter acts as a "remote control" for SAP GUI.
     - Run `python mcp_stdio.py` for CLI/Stdio usage.
     - Run `python main.py` for WebSocket usage.
 
-Detailed instructions can be found in the [Installation Guide](installation.md).
+Detailed instructions can be found in the [Installation Guide](installation.md) and the [MCP Configuration Guide](mcp-configuration.md).
 
 ## 3. Your First Tools
 

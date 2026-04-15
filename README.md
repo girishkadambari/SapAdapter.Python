@@ -69,7 +69,8 @@ The adapter exposes several tools to AI agents:
 
 - [Getting Started](docs/getting-started.md)
 - [Installation & Setup](docs/installation.md)
-- [Architecture Overview](docs/architecture.md)
+- [Architecture Overview](docs/ARCHITECTURE.md)
+- [MCP Configuration Guide](docs/mcp-configuration.md)
 - [MCP Tool Reference](docs/mcp-tools.md)
 - [Troubleshooting Guide](docs/troubleshooting.md)
 - [FAQ](docs/faq.md)
