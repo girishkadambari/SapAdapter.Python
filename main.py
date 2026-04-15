@@ -2,6 +2,9 @@ import asyncio
 import os
 import json
 import pythoncom
+from dotenv import load_dotenv
+
+load_dotenv()
 from typing import Optional
 
 from sap_mcp.utils.logger import setup_logger

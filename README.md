@@ -1,56 +1,87 @@
-# SAP MCP Server
+# SAP MCP Adapter
 
-A production-grade, deterministic SAP GUI scripting runtime and Model Context Protocol (MCP) server.
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![MCP](https://img.shields.io/badge/MCP-Protocol-green.svg)](https://modelcontextprotocol.io)
 
-## Overview
+**SAP MCP Adapter** is a production-grade interface that bridges AI agents with SAP GUI for Windows using the Model Context Protocol (MCP). It provides a deterministic, structured, and safe way for models to navigate SAP, observe screen states, and execute complex business transactions.
 
-This server provides AI agents with a reliable, structured interface for interacting with SAP GUI for Windows. It solves common automation challenges such as busy states, modal dialogs, and complex control trees by providing high-performance observers and deterministic action executors.
+## 🚀 Key Features
 
-## Key Features
-
-- **Protocol Compliant**: Full support for Model Context Protocol (MCP) and legacy JSON-RPC.
-- **Deterministic Execution**: Action pipeline with built-in safety guards (`WaitStrategy`, `BusyGuard`).
-- **Structured Observation**: Converts raw SAP COM trees into clean, typed Pydantic models.
-- **Visual Capture**: High-quality screenshot support for debugging and VLM reasoning.
-- **Functional Extraction**: High-level services to extract validated business entities (e.g., Sales Orders).
+- **Protocol Compliant**: Full support for Model Context Protocol (MCP) for seamless integration with Claude Desktop, IDEs, and custom AI agents.
+- **Deterministic Interaction**: High-reliability action pipeline with built-in safety guards (`WaitStrategy`, `BusyGuard`).
+- **Structured Observation**: Converts raw SAP COM hierarchies into clean, typed Pydantic models.
+- **Visual reasoning**: High-quality screenshot support for debugging and Vision-Language Model (VLM) analysis.
 - **Intelligent Classification**: Automatically categorizes screens (Search, Detail, Grid) to guide agent behavior.
+- **Business Entity Extraction**: Domain-aware data extraction (e.g., Sales Orders, Material Master) directly from the GUI.
 
-## Installation
+## 📦 Quickstart
 
 ### Prerequisites
-- Windows OS (Required for SAP GUI Scripting)
-- SAP GUI for Windows installed
-- "Scripting" enabled in SAP GUI Options -> Accessibility & Scripting -> Scripting
 
-### Setup
-1. Clone the repository.
-2. Install dependencies:
+- **Windows OS** (Required for SAP GUI Scripting).
+- **SAP GUI for Windows** installed and configured.
+- **Scripting Enabled**: SAP GUI Options -> Accessibility & Scripting -> Scripting -> "Enable scripting" (checked).
+
+### Installation
+
+1. Clone the repository:
    ```bash
+   git clone https://github.com/your-repo/sap-mcp-adapter.git
+   cd sap-mcp-adapter
+   ```
+
+2. Create a virtual environment and install dependencies:
+   ```bash
+   python -m venv venv
+   source venv/Scripts/activate  # On Windows
    pip install -r requirements.txt
    ```
-3. Start the server:
+
+3. Configure your environment:
    ```bash
-   python main.py
+   cp .env.example .env
    ```
 
-## Usage (MCP Tools)
+### Running the Server
 
-The server exposes several tools for AI agents:
+#### Over Stdio (Recommended for MCP Clients)
+```bash
+python mcp_stdio.py
+```
 
-- `list_sessions`: Discover active SAP GUI windows.
-- `observe_screen`: Capture current screen state (controls, status bar, modals).
-- `execute_action`: Perform clicks, text entry, or selections on specific controls.
-- `extract_entity`: Retrieve business-validated data objects from the screen.
+#### Over WebSockets
+```bash
+python main.py
+```
 
-## Project Structure
+## 🛠 MCP Tools
 
-- `sap_mcp/runtime`: Session management and COM execution safety.
-- `sap_mcp/observation`: Logic for building structured screen snapshots.
-- `sap_mcp/controls`: Specialized handlers for fields, tables, grids, and shells.
-- `sap_mcp/execution`: Deterministic action pipelines and wait strategies.
-- `sap_mcp/extraction`: Business-level data extractions and validation.
-- `sap_mcp/classification`: Screen pattern recognition.
-- `sap_mcp/mcp`: MCP protocol adapter and server logic.
+The adapter exposes several tools to AI agents:
 
-## License
-Proprietary - Part of SAP Copilot Suite
+- `sap_list_sessions`: Discover active SAP GUI windows.
+- `sap_observe_screen`: Capture current screen state (controls, status bar, modals).
+- `sap_execute_action`: Perform clicks, text entry, or selections.
+- `sap_extract_entity`: Retrieve business-validated data objects.
+- `sap_capture_visual`: Capture a high-resolution screenshot of the active window.
+
+## 📖 Documentation
+
+- [Getting Started](docs/getting-started.md)
+- [Installation & Setup](docs/installation.md)
+- [Architecture Overview](docs/architecture.md)
+- [MCP Tool Reference](docs/mcp-tools.md)
+- [Troubleshooting Guide](docs/troubleshooting.md)
+- [FAQ](docs/faq.md)
+- [Development Guide](docs/development.md)
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
+
+## 📄 License
+
+This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+
+---
+*Disclaimer: This project is not affiliated with, sponsored by, or endorsed by SAP SE.*

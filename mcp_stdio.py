@@ -2,6 +2,9 @@ import sys
 import json
 import asyncio
 from loguru import logger
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Suppress loguru output to stdout immediately to avoid interfering with MCP JSON-RPC
 logger.remove()

@@ -1,6 +1,5 @@
 import sys
 import os
-sys.path.append(r"c:\Users\trainer\Documents\girish-workspace\SapAdapter.Python")
 from sap_mcp.observation.enricher import ControlEnricher
 from sap_mcp.schemas.control import Control
 from sap_mcp.core.config import ControlSubtypes
