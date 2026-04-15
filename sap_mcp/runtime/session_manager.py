@@ -1,7 +1,6 @@
 from typing import List, Optional, Dict
 from loguru import logger
 import win32com.client
-from ..schemas.observation import ScreenObservation, StatusBar
 from .com_executor import ComExecutor
 
 class SessionManager:
@@ -67,11 +66,11 @@ class SessionManager:
                         }
                         sessions.append(session_data)
                         self._sessions[session_id] = session_data
-                except Exception as e:
+                except Exception:
                     logger.exception(f"Failed to enumerate sessions for connection {i}")
                     
             return sessions
-        except Exception as e:
+        except Exception:
             logger.exception("Failed to list SAP sessions")
             return []
 

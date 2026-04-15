@@ -1,10 +1,9 @@
-from typing import Any, Dict, Optional
 """
 Action execution pipeline.
 Deterministic routing and execution of UI interactions with post-action verification.
 """
 from loguru import logger
-from ..core.config import Config, ActionTypes, StatusBarTypes
+from ..core.config import StatusBarTypes
 from ..schemas import ActionRequest, ActionResult
 from ..runtime.sap_runtime import SapRuntime
 from .wait_strategy import WaitStrategy

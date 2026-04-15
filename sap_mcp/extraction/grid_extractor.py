@@ -1,4 +1,4 @@
-from typing import Any, List, Dict
+from typing import List, Dict
 from ..runtime.sap_runtime import SapRuntime
 
 class GridExtractor:

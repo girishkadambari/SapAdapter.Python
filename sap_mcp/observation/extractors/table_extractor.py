@@ -1,5 +1,4 @@
 from typing import Any, List, Dict
-from typing import Any
 from .base_extractor import BaseControlExtractor
 from ...schemas.control import Control
 from ...core.config import SapGuiTypes, ControlSubtypes
@@ -50,6 +49,6 @@ class TableExtractor(BaseControlExtractor):
                     "title": str(col.Title),
                     "index": i
                 })
-        except:
+        except Exception:
             pass
         return columns

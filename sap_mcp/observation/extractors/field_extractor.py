@@ -23,9 +23,12 @@ class FieldExtractor(BaseControlExtractor):
         sap_type = props["type"]
         
         kind = ControlSubtypes.TEXT
-        if sap_type == SapGuiTypes.CHECKBOX: kind = ControlSubtypes.CHECKBOX
-        elif sap_type == SapGuiTypes.RADIO_BUTTON: kind = ControlSubtypes.RADIO
-        elif sap_type == SapGuiTypes.PASSWORD_FIELD: kind = ControlSubtypes.PASSWORD
+        if sap_type == SapGuiTypes.CHECKBOX:
+            kind = ControlSubtypes.CHECKBOX
+        elif sap_type == SapGuiTypes.RADIO_BUTTON:
+            kind = ControlSubtypes.RADIO
+        elif sap_type == SapGuiTypes.PASSWORD_FIELD:
+            kind = ControlSubtypes.PASSWORD
         
         value = props["text"]
         if kind in (ControlSubtypes.CHECKBOX, ControlSubtypes.RADIO):

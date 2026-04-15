@@ -1,5 +1,4 @@
 import sys
-import json
 import asyncio
 from loguru import logger
 from dotenv import load_dotenv
@@ -10,9 +9,9 @@ load_dotenv()
 logger.remove()
 logger.add(sys.stderr, level="INFO")
 
-from sap_mcp.runtime.sap_runtime import SapRuntime
-from sap_mcp.mcp.mcp_adapter import McpAdapter
-from sap_mcp.mcp.mcp_server import McpServer
+from sap_mcp.runtime.sap_runtime import SapRuntime  # noqa: E402
+from sap_mcp.mcp.mcp_adapter import McpAdapter  # noqa: E402
+from sap_mcp.mcp.mcp_server import McpServer  # noqa: E402
 
 async def stdio_server():
     """

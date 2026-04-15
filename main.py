@@ -1,21 +1,20 @@
 import asyncio
 import os
-import json
 import pythoncom
 from dotenv import load_dotenv
 
 load_dotenv()
-from typing import Optional
+from typing import Optional  # noqa: E402
 
-from sap_mcp.utils.logger import setup_logger
-from sap_mcp.server.websocket import WebSocketServer
-from sap_mcp.server.router import CommandRouter
-from sap_mcp.runtime.sap_runtime import SapRuntime
-from sap_mcp.mcp.mcp_adapter import McpAdapter
-from sap_mcp.mcp.mcp_server import McpServer
-from sap_mcp.observation.screen_observation_builder import ScreenObservationBuilder
-from sap_mcp.execution.action_dispatcher import ActionDispatcher
-from sap_mcp.schemas import ActionRequest
+from sap_mcp.utils.logger import setup_logger  # noqa: E402
+from sap_mcp.server.websocket import WebSocketServer  # noqa: E402
+from sap_mcp.server.router import CommandRouter  # noqa: E402
+from sap_mcp.runtime.sap_runtime import SapRuntime  # noqa: E402
+from sap_mcp.mcp.mcp_adapter import McpAdapter  # noqa: E402
+from sap_mcp.mcp.mcp_server import McpServer  # noqa: E402
+from sap_mcp.observation.screen_observation_builder import ScreenObservationBuilder  # noqa: E402
+from sap_mcp.execution.action_dispatcher import ActionDispatcher  # noqa: E402
+from sap_mcp.schemas import ActionRequest  # noqa: E402
 
 # Standardized Core Instances
 runtime = SapRuntime()

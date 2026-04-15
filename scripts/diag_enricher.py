@@ -1,5 +1,3 @@
-import sys
-import os
 from sap_mcp.observation.enricher import ControlEnricher
 from sap_mcp.schemas.control import Control
 from sap_mcp.core.config import ControlSubtypes

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Type
+from typing import Any, List
 from .base_extractor import BaseControlExtractor
 from .button_extractor import ButtonExtractor
 from .field_extractor import FieldExtractor
@@ -6,7 +6,6 @@ from .table_extractor import TableExtractor
 from .grid_extractor import GridExtractor
 from .tree_extractor import TreeExtractor
 from .tab_extractor import TabExtractor
-from loguru import logger
 
 class ExtractorRegistry:
     """

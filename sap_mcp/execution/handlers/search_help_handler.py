@@ -32,7 +32,8 @@ class SearchHelpHandler(ActionHandler):
                     if found_row is not None:
                         row = found_row
                 
-                if row is None: row = 0
+                if row is None:
+                    row = 0
 
                 if list_ctrl.Type == SapGuiTypes.GRID_VIEW:
                     list_ctrl.doubleClickRow(row)
@@ -86,11 +87,13 @@ class SearchHelpHandler(ActionHandler):
 
         def collect_labels(container):
             try:
-                if not hasattr(container, "Children"): return
+                if not hasattr(container, "Children"):
+                    return
                 count = container.Children.Count
                 for i in range(count):
                     child = container.Children(i)
-                    if not child: continue
+                    if not child:
+                        continue
                     
                     # Track labels and text fields (sometimes used in legacy lists)
                     if child.Type in [SapGuiTypes.LABEL, SapGuiTypes.TEXT_FIELD, SapGuiTypes.CTEXT_FIELD]:
@@ -110,7 +113,8 @@ class SearchHelpHandler(ActionHandler):
                 logger.debug(f"Recursion break at {getattr(container, 'Id', 'unknown')}: {e}")
 
         usr_area = win.FindById("usr") if hasattr(win, "FindById") else win
-        if not usr_area: return None
+        if not usr_area:
+            return None
         
         collect_labels(usr_area)
         if not all_labels: 
@@ -119,10 +123,11 @@ class SearchHelpHandler(ActionHandler):
 
         # Group by row
         rows = {}
-        for l in all_labels:
-            r = l["row"]
-            if r not in rows: rows[r] = []
-            rows[r].append(l)
+        for label_entry in all_labels:
+            r = label_entry["row"]
+            if r not in rows:
+                rows[r] = []
+            rows[r].append(label_entry)
 
         sorted_row_indices = sorted(rows.keys())
         
@@ -130,10 +135,10 @@ class SearchHelpHandler(ActionHandler):
         if value:
             val_lower = value.lower()
             for r in sorted_row_indices:
-                for l in rows[r]:
-                    if val_lower in str(l["value"]).lower():
-                        logger.info(f"Found value '{value}' in row {r}, column {l['col']}")
-                        return l["obj"]
+                for label_entry in rows[r]:
+                    if val_lower in str(label_entry["value"]).lower():
+                        logger.info(f"Found value '{value}' in row {r}, column {label_entry['col']}")
+                        return label_entry["obj"]
 
         # 2. Selection by Index (Row)
         if row_idx is not None:
@@ -185,12 +190,14 @@ class SearchHelpHandler(ActionHandler):
         return None
 
     def _find_list_control(self, container: Any) -> Any:
-        if not container: return None
+        if not container:
+            return None
         if container.Type in (SapGuiTypes.GRID_VIEW, SapGuiTypes.TABLE_CONTROL):
             return container
             
         if hasattr(container, "Children"):
             for i in range(container.Children.Count):
                 found = self._find_list_control(container.Children(i))
-                if found: return found
+                if found:
+                    return found
         return None

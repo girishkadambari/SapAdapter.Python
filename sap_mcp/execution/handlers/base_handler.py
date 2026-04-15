@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict
-from loguru import logger
 from ...schemas import ActionRequest, ActionResult
 from ...runtime.sap_runtime import SapRuntime
 from ..wait_strategy import WaitStrategy

@@ -60,7 +60,8 @@ class ModalGuard:
                     if hasattr(child, "Children"):
                         _find_btns(child)
             _find_btns(window)
-        except: pass
+        except Exception:
+            pass
         return buttons
 
     @staticmethod
@@ -77,5 +78,6 @@ class ModalGuard:
                     if hasattr(child, "Children"):
                         _find_text(child)
             _find_text(window)
-        except: pass
+        except Exception:
+            pass
         return " ".join(texts)

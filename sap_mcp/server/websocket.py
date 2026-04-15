@@ -2,7 +2,7 @@ import json
 import asyncio
 import websockets
 from loguru import logger
-from typing import Any, Optional
+from typing import Any
 
 class WebSocketServer:
     """

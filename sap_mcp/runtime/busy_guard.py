@@ -28,7 +28,7 @@ class BusyGuard:
                         text = sb.Text.lower() if sb and sb.Text else ""
                         if "please wait" not in text and "system busy" not in text:
                             return
-                    except:
+                    except Exception:
                         # If status bar access fails, assume idle if Busy is false
                         return
             except Exception as e:

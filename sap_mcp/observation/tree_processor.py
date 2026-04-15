@@ -86,40 +86,58 @@ class TreeProcessor:
         )
 
     def _determine_subtype(self, sap_id: str, sap_type: str, props: Dict[str, Any] = {}) -> str:
-        if sap_type in (SapGuiTypes.BUTTON, "GuiButton"): return ControlSubtypes.BUTTON
-        if sap_type in (SapGuiTypes.TEXT_FIELD, SapGuiTypes.C_TEXT_FIELD, "GuiTextField", "GuiCTextField"): return ControlSubtypes.TEXT
-        if sap_type in (SapGuiTypes.CHECKBOX, "GuiCheckBox"): return ControlSubtypes.CHECKBOX
-        if sap_type in (SapGuiTypes.RADIO_BUTTON, "GuiRadioButton"): return ControlSubtypes.RADIO
-        if sap_type in (SapGuiTypes.COMBOBOX, "GuiComboBox"): return ControlSubtypes.COMBOBOX
-        if sap_type in (SapGuiTypes.TAB, "GuiTab"): return ControlSubtypes.TAB
-        if sap_id.endswith("StatusBar"): return "statusbar"
+        if sap_type in (SapGuiTypes.BUTTON, "GuiButton"):
+            return ControlSubtypes.BUTTON
+        if sap_type in (SapGuiTypes.TEXT_FIELD, SapGuiTypes.C_TEXT_FIELD, "GuiTextField", "GuiCTextField"):
+            return ControlSubtypes.TEXT
+        if sap_type in (SapGuiTypes.CHECKBOX, "GuiCheckBox"):
+            return ControlSubtypes.CHECKBOX
+        if sap_type in (SapGuiTypes.RADIO_BUTTON, "GuiRadioButton"):
+            return ControlSubtypes.RADIO
+        if sap_type in (SapGuiTypes.COMBOBOX, "GuiComboBox"):
+            return ControlSubtypes.COMBOBOX
+        if sap_type in (SapGuiTypes.TAB, "GuiTab"):
+            return ControlSubtypes.TAB
+        if sap_id.endswith("StatusBar"):
+            return "statusbar"
         if sap_type in ("GuiShell"):
             shell_subtype = props.get("SubType", "")
             label = (props.get("Text") or props.get("Tooltip") or "").lower()
-            if "GridView" in shell_subtype or "gridview" in label or "grid" in label: return ControlSubtypes.GRID
-            if "Tree" in shell_subtype or "tree" in label: return ControlSubtypes.TREE
+            if "GridView" in shell_subtype or "gridview" in label or "grid" in label:
+                return ControlSubtypes.GRID
+            if "Tree" in shell_subtype or "tree" in label:
+                return ControlSubtypes.TREE
             return "shell"
-        if sap_type in (SapGuiTypes.LABEL, "GuiLabel"): return ControlSubtypes.LABEL
-        if sap_type in (SapGuiTypes.STATUSBAR, "GuiStatusbar"): return ControlSubtypes.STATUSBAR
-        if sap_type in (SapGuiTypes.TOOLBAR, "GuiToolbar"): return "toolbar"
-        if sap_type in (SapGuiTypes.MENU, "GuiMenu"): return ControlSubtypes.MENU
+        if sap_type in (SapGuiTypes.LABEL, "GuiLabel"):
+            return ControlSubtypes.LABEL
+        if sap_type in (SapGuiTypes.STATUSBAR, "GuiStatusbar"):
+            return ControlSubtypes.STATUSBAR
+        if sap_type in (SapGuiTypes.TOOLBAR, "GuiToolbar"):
+            return "toolbar"
+        if sap_type in (SapGuiTypes.MENU, "GuiMenu"):
+            return ControlSubtypes.MENU
         
         return ControlSubtypes.UNKNOWN
 
     def _parse_bounds(self, props: Dict[str, Any]) -> Optional[tuple]:
         if all(k in props for k in ["Left", "Top", "Width", "Height"]):
-            l, t, w, h = props["Left"], props["Top"], props["Width"], props["Height"]
-            if l != "" and t != "":
+            left, top, width, height = props["Left"], props["Top"], props["Width"], props["Height"]
+            if left != "" and top != "":
                 try:
-                    return (int(l.strip()), int(t.strip()), int(w.strip()), int(h.strip()))
-                except: pass
+                    return (int(left.strip()), int(top.strip()), int(width.strip()), int(height.strip()))
+                except Exception:
+                    pass
         return None
 
     def _to_bool(self, val: Any, default: bool = False) -> bool:
-        if isinstance(val, bool): return val
+        if isinstance(val, bool):
+            return val
         if isinstance(val, str):
             v = val.lower().strip()
-            if v in ("true", "x", "1"): return True
-            if v in ("false", "0"): return False
-            if v == "": return default
+            if v in ("true", "x", "1"):
+                return True
+            if v in ("false", "0"):
+                return False
+            if v == "":
+                return default
         return default

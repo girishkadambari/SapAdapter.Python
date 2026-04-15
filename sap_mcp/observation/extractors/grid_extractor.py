@@ -1,5 +1,4 @@
 from typing import Any, List, Dict
-from typing import Any
 from .base_extractor import BaseControlExtractor
 from ...schemas.control import Control
 from ...core.config import SapGuiTypes, ControlSubtypes
@@ -50,7 +49,7 @@ class GridExtractor(BaseControlExtractor):
                     "title": str(control.GetColumnTitle(col_name)),
                     "index": i
                 })
-        except:
+        except Exception:
             # Fallback for shells that might not expose ColumnOrder directly
             pass
         return columns

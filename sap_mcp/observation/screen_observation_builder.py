@@ -1,7 +1,7 @@
-from typing import Any, Optional, Dict, List
+from typing import Any, Optional, List
 from loguru import logger
 
-from ..schemas.observation import ScreenObservation, StatusBar, Modal, ValidationSummary
+from ..schemas.observation import ScreenObservation, StatusBar, ValidationSummary
 from ..runtime.sap_runtime import SapRuntime
 from .raw_snapshot_builder import RawSnapshotBuilder
 from .extractors.registry import ExtractorRegistry
@@ -104,7 +104,7 @@ class ScreenObservationBuilder:
                 msg_id=str(getattr(sb, "MessageId", None)),
                 msg_no=str(getattr(sb, "MessageNumber", None))
             )
-        except:
+        except Exception:
             return StatusBar(type="", text="")
 
     def _capture_screenshot(self, win: Any) -> Optional[str]:

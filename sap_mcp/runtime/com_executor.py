@@ -1,6 +1,6 @@
 import pythoncom
 import win32com.client
-from typing import Any, Callable, TypeVar, Optional
+from typing import Any, Callable, TypeVar
 from loguru import logger
 import threading
 

@@ -1,4 +1,4 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 from .base_tool import BaseMcpTool
 from ...observation.screen_observation_builder import ScreenObservationBuilder
 

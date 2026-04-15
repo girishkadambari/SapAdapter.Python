@@ -1,4 +1,4 @@
-from typing import List, Dict, Type, Any, Optional
+from typing import List, Dict, Any, Optional
 from .base_tool import BaseMcpTool
 from loguru import logger
 

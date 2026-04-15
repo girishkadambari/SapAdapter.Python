@@ -1,5 +1,4 @@
-from typing import Any, List, Dict
-from ..schemas.observation import ScreenObservation
+from typing import List, Dict
 from ..runtime.sap_runtime import SapRuntime
 
 class TableExtractor:
@@ -33,7 +32,7 @@ class TableExtractor:
                     # or more commonly by child path if they are text fields
                     cell = table.GetCell(i, j)
                     row_data[str(col.Title)] = str(cell.Text)
-                except:
+                except Exception:
                     row_data[str(col.Title)] = ""
             
             # Skip empty rows (common at the end of tables)

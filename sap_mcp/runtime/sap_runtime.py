@@ -1,6 +1,5 @@
 from typing import Any, Optional, List, Dict
 from loguru import logger
-from ..schemas.observation import ScreenObservation
 from .busy_guard import BusyGuard
 from .modal_guard import ModalGuard
 from .com_executor import ComExecutor

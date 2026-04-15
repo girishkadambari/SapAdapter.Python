@@ -1,5 +1,4 @@
-import json
-from typing import Any, Dict, List
+from typing import Any, Dict
 from .base_tool import BaseMcpTool
 from ...runtime.sap_runtime import SapRuntime
 

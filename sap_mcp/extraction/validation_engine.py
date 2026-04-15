@@ -1,4 +1,3 @@
-from typing import Any, List
 from ..schemas.validation import ValidationResult
 from ..schemas.extraction import BusinessExtraction
 

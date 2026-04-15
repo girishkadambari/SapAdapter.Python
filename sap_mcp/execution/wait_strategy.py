@@ -1,5 +1,5 @@
 import asyncio
-from typing import Any, Optional
+from typing import Any
 from loguru import logger
 from ..runtime.sap_runtime import SapRuntime
 
@@ -16,8 +16,6 @@ class WaitStrategy:
         """
         Waits for SAP to be idle and ensures no blocking modals.
         """
-        start_time = asyncio.get_event_loop().time()
-        
         # 1. Busy Guard
         await self.runtime.busy_guard.wait_for_idle(session, timeout=timeout)
         

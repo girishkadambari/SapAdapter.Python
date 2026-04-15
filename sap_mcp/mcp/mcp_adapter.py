@@ -1,11 +1,10 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 from loguru import logger
 
 from ..runtime.sap_runtime import SapRuntime
 from ..observation.screen_observation_builder import ScreenObservationBuilder
 from ..execution.action_dispatcher import ActionDispatcher
 from ..extraction.entity_extractor import EntityExtractor
-from ..schemas import ActionRequest
 
 from .tools.registry import ToolRegistry
 from .tools.session_tools import SapListSessionsTool

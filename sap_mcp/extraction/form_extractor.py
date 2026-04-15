@@ -1,4 +1,4 @@
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional
 from ..schemas.control import Control
 from ..schemas.observation import ScreenObservation
 

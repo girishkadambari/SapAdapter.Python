@@ -1,4 +1,3 @@
-from typing import Any, Dict, List, Optional
 from ..schemas.extraction import BusinessExtraction
 from ..schemas.observation import ScreenObservation
 from .form_extractor import FormExtractor

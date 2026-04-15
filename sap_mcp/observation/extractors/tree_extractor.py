@@ -15,7 +15,7 @@ class TreeExtractor(BaseControlExtractor):
         if ctype == SapGuiTypes.SHELL:
             try:
                 return str(control.SubType) == "Tree"
-            except:
+            except Exception:
                 return False
         return False
 

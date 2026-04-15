@@ -41,36 +41,49 @@ class ShellHandler(ActionHandler):
         if not node_key:
             raise ValueError(f"node_key required for tree action {action}")
 
-        if action == ActionTypes.SELECT_NODE: target.SelectNode(node_key)
-        elif action == ActionTypes.EXPAND_NODE: target.ExpandNode(node_key)
-        elif action == ActionTypes.COLLAPSE_NODE: target.CollapseNode(node_key)
-        elif action == ActionTypes.DOUBLE_CLICK_NODE: target.DoubleClickNode(node_key)
-        elif action == ActionTypes.NODE_CONTEXT_MENU: target.NodeContextMenu(node_key)
+        if action == ActionTypes.SELECT_NODE:
+            target.SelectNode(node_key)
+        elif action == ActionTypes.EXPAND_NODE:
+            target.ExpandNode(node_key)
+        elif action == ActionTypes.COLLAPSE_NODE:
+            target.CollapseNode(node_key)
+        elif action == ActionTypes.DOUBLE_CLICK_NODE:
+            target.DoubleClickNode(node_key)
+        elif action == ActionTypes.NODE_CONTEXT_MENU:
+            target.NodeContextMenu(node_key)
         elif action == ActionTypes.SELECT_ITEM:
             item_name = params.get("item_name", "")
             target.SelectItem(node_key, item_name)
         elif action == ActionTypes.PRESS_CONTEXT_BUTTON:
             btn_id = params.get("button_id")
             target.PressContextButton(node_key, btn_id)
-        else: raise ValueError(f"Unknown tree action: {action}")
+        else:
+            raise ValueError(f"Unknown tree action: {action}")
         
         return ActionResult(success=True, action_type=action, target_id=target.Id, message=f"Tree: {action} on {node_key}")
 
     def _handle_toolbar(self, target, action, params) -> ActionResult:
         btn = params.get("button_id")
-        if action == ActionTypes.PRESS_BUTTON: target.PressButton(btn)
-        elif action == ActionTypes.PRESS_CONTEXT_BUTTON: target.PressContextButton(btn)
-        elif action == ActionTypes.SELECT_MENU_ITEM: target.SelectMenuItem(btn)
-        else: raise ValueError(f"Unknown toolbar action: {action}")
+        if action == ActionTypes.PRESS_BUTTON:
+            target.PressButton(btn)
+        elif action == ActionTypes.PRESS_CONTEXT_BUTTON:
+            target.PressContextButton(btn)
+        elif action == ActionTypes.SELECT_MENU_ITEM:
+            target.SelectMenuItem(btn)
+        else:
+            raise ValueError(f"Unknown toolbar action: {action}")
         
         return ActionResult(success=True, action_type=action, target_id=target.Id, message=f"Toolbar: {action} on {btn}")
 
     def _handle_grid_shell(self, target, action, params) -> ActionResult:
         row = int(params.get("row", 0))
         col = params.get("column")
-        if action == ActionTypes.ACTIVATE_CELL: target.DoubleClick(row, col)
-        elif action == ActionTypes.SELECT_ROW: target.SelectedRows = str(row)
-        else: raise ValueError(f"Unknown GridView shell action: {action}")
+        if action == ActionTypes.ACTIVATE_CELL:
+            target.DoubleClick(row, col)
+        elif action == ActionTypes.SELECT_ROW:
+            target.SelectedRows = str(row)
+        else:
+            raise ValueError(f"Unknown GridView shell action: {action}")
         
         return ActionResult(success=True, action_type=action, target_id=target.Id, message=f"GridShell: {action} on row {row}")
 

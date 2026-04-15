@@ -128,10 +128,11 @@ class TableHandler(ActionHandler):
     # --- ATOMIC INTERACTIONS (Low-Level Helpers) ---
 
     def _parse_column(self, col_raw: Any) -> Any:
-        if col_raw is None: return None
+        if col_raw is None:
+            return None
         try:
             return int(col_raw)
-        except:
+        except Exception:
             return str(col_raw)
 
     def _scroll_to(self, target: Any, ctype: str, row: int):
@@ -195,7 +196,8 @@ class TableHandler(ActionHandler):
                 for i in range(col_order.Count):
                     name = str(col_order.ElementAt(i))
                     schema.append({"name": name, "title": str(target.GetColumnTitle(name))})
-        except: pass
+        except Exception:
+            pass
         return schema
 
     def _find_row(self, target: Any, ctype: str, col: Any, text: str) -> int:

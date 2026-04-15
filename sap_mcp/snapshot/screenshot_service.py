@@ -7,7 +7,6 @@ try:
     import win32gui
     import win32ui
     import win32con
-    import pythoncom
 except ImportError:
     # Fallback for development on non-windows
     win32gui = None
@@ -44,7 +43,7 @@ class ScreenshotService:
             saveDC.SelectObject(saveBitMap)
 
             # Copy window into bitmap
-            result = saveDC.BitBlt((0, 0), (width, height), mfcDC, (0, 0), win32con.SRCCOPY)
+            saveDC.BitBlt((0, 0), (width, height), mfcDC, (0, 0), win32con.SRCCOPY)
             
             bmpinfo = saveBitMap.GetInfo()
             bmpstr = saveBitMap.GetBitmapBits(True)
