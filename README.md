@@ -6,6 +6,7 @@
 
 **SAP MCP Adapter** is a production-grade interface that bridges AI agents with SAP GUI for Windows using the Model Context Protocol (MCP). It provides a deterministic, structured, and safe way for models to navigate SAP, observe screen states, and execute complex business transactions.
 
+
 ## 🚀 Key Features
 
 - **Protocol Compliant**: Full support for Model Context Protocol (MCP) for seamless integration with Claude Desktop, IDEs, and custom AI agents.
